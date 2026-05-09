@@ -61,19 +61,23 @@ export function ResizablePane({
    }, [isDragging, handleMouseMove, handleMouseUp])
 
    return (
-      <div ref={containerRef} className={cn("flex h-full overflow-hidden", className)}>
-         <div style={{ width: leftWidth, flexShrink: 0 }} className="overflow-hidden">
-            {left}
-         </div>
-         <div
-            className={cn(
-               "relative w-1.5 cursor-col-resize bg-transparent hover:bg-accent/30 transition-colors shrink-0",
-               isDragging && "bg-accent/50"
-            )}
-            onMouseDown={handleMouseDown}
-         >
-            <div className="absolute inset-y-0 -left-1 -right-1" />
-         </div>
+      <div ref={containerRef} className={cn("flex h-full w-full overflow-hidden", className)}>
+         {!!left && (
+            <div style={{ width: leftWidth, flexShrink: 0 }} className="overflow-hidden">
+               {left}
+            </div>
+         )}
+         {!!left && (
+            <div
+               className={cn(
+                  "relative w-1.5 cursor-col-resize bg-transparent hover:bg-accent/30 transition-colors shrink-0",
+                  isDragging && "bg-accent/50"
+               )}
+               onMouseDown={handleMouseDown}
+            >
+               <div className="absolute inset-y-0 -left-1 -right-1" />
+            </div>
+         )}
          <div className="flex-1 overflow-hidden min-w-0">{right}</div>
       </div>
    )

@@ -40,7 +40,7 @@ export function TabBar() {
    )
 
    return (
-      <div className="flex h-10 items-end bg-transparent overflow-hidden">
+      <div className="flex h-full w-full items-end bg-transparent overflow-hidden">
          <div className="flex-1 flex items-end overflow-x-auto scrollbar-none h-full pl-2">
             <AnimatePresence mode="popLayout">
                {tabs.map((tab, index) => (

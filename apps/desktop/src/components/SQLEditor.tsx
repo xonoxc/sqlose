@@ -32,7 +32,7 @@ export function SQLEditor({ onExecute, onSettingsOpen, isExecuting, executionTim
    const selectedEnv = selectedEnvironmentId ? getEnvironment(selectedEnvironmentId) : null
 
    const handleEditorMount = useCallback(
-      async (editor: editor.IStandaloneCodeEditor, monaco: any) => {
+      async (editor: editor.IStandaloneCodeEditor, monaco: typeof import("monaco-editor")) => {
          editorRef.current = editor
 
          // Define custom premium dark theme

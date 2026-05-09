@@ -1,13 +1,10 @@
 // CJS compat shims for bundled packages
 import { fileURLToPath } from "node:url"
-import { createRequire } from "node:module"
 import path from "node:path"
 import { app, BrowserWindow } from "electron"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const require = createRequire(import.meta.url)
-
 import { initDocker, cleanupOrphans } from "@sqlose/core"
 import { registerAllHandlers } from "./ipc-handlers"
 
