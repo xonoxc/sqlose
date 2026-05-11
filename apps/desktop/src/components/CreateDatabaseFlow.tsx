@@ -83,7 +83,9 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
    }, [step])
 
    const updateStepStatus = (stepId: string, status: ProvisioningStep["status"], message?: string) => {
-      setProvisioningSteps((prev) => prev.map((s) => (s.id === stepId ? { ...s, status, message } : s)))
+      setProvisioningSteps((prev) => prev.map((s) => (s.id === stepId ? {
+			...s, status, message 
+		} : s)))
    }
 
    const runProvision = async () => {

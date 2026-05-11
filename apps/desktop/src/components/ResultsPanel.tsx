@@ -52,16 +52,12 @@ export function ResultsPanel({ result, error, isExecuting }: ResultsPanelProps) 
    }
 
    return (
-      <motion.div
-         initial={{ opacity: 0, y: 8 }}
-         animate={{ opacity: 1, y: 0 }}
-         className="h-full bg-bg-primary overflow-hidden flex flex-col"
-      >
+      <div className="h-full bg-bg-primary overflow-hidden flex flex-col">
          <div className="flex-1 min-h-0">
             <ResultsTable
                data={result.rows as Record<string, unknown>[]}
             />
          </div>
-      </motion.div>
+      </div>
    )
 }
