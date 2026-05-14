@@ -291,7 +291,7 @@ export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, isExecut
                      padding: { top: 12, bottom: 12 },
                      suggestOnTriggerCharacters: true,
                      quickSuggestions: true,
-                      scrollbar: { vertical: "hidden", horizontal: "hidden" },
+                       scrollbar: { vertical: "hidden", horizontal: "hidden", verticalScrollbarSize: 0, horizontalScrollbarSize: 0, alwaysConsumeMouseWheel: false },
                       cursorBlinking: "solid",
                       cursorSmoothCaretAnimation: "off",
                       smoothScrolling: false,
