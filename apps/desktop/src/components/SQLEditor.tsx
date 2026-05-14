@@ -6,6 +6,7 @@ import { useEnvironmentStore } from "../stores/environmentStore"
 import { useSettingsStore } from "../stores/settingsStore"
 import { useEditorStore } from "../stores/editorStore"
 import { useSavedQueriesStore } from "../stores/savedQueriesStore"
+import { isMac } from "../lib/types"
 import type { VimMode } from "../lib/types"
 
 const Editor = lazy(() => import("@monaco-editor/react"))
@@ -194,9 +195,10 @@ export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, isExecut
                         <IconPlayerPlay className="h-3 w-3 fill-current" />
                         Run Query
                         <div className="flex items-center gap-0.5 ml-1 opacity-70 border-l border-white/20 pl-2">
-                           <span className="text-[9px] font-sans font-medium">⌘</span>
-                           <span className="text-[9px] font-sans font-medium">↵</span>
-                        </div>
+                            <span className="text-[9px] font-sans font-medium">{isMac() ? "⌘" : "Ctrl"}</span>
+                            {!isMac() && <span className="text-[9px] font-sans font-medium">+</span>}
+                            <span className="text-[9px] font-sans font-medium">↵</span>
+                         </div>
                      </>
                   )}
                </button>

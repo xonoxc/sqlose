@@ -144,6 +144,22 @@ export function createDefaultPaneSizes(): PaneSizes {
    }
 }
 
+export function isMac(): boolean {
+   return navigator.platform.toLowerCase().includes("mac")
+}
+
+export function formatShortcut(mod: boolean, shift: boolean, alt: boolean, key: string): string {
+   const parts: string[] = []
+   if (mod) parts.push(isMac() ? "⌘" : "Ctrl")
+   if (shift) parts.push("⇧")
+   if (alt) parts.push(isMac() ? "⌥" : "Alt")
+   if (key === "Enter") parts.push("↵")
+   else if (key === "Tab") parts.push("⇥")
+   else if (key === " ") parts.push("Space")
+   else parts.push(key.toUpperCase())
+   return parts.join(isMac() ? "" : "+")
+}
+
 export function createDefaultKeybindings(): Keybinding[] {
    return [
       { action: "query.execute", key: "Enter", ctrl: false, shift: false, alt: false, meta: true },

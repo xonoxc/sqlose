@@ -18,6 +18,7 @@ import { useEditorStore } from "./stores/editorStore"
 import { useWorkspaceStore } from "./stores/workspaceStore"
 import { useSettingsStore } from "./stores/settingsStore"
 import { useHistoryStore } from "./stores/historyStore"
+import { isMac } from "./lib/types"
 import {
    IconX, IconChevronRight, IconChevronDown,
    IconCopy, IconDownload, IconTrash,
@@ -246,42 +247,45 @@ function AppContent() {
    }, [paneSizes.sidebarWidth, updatePaneSizes])
 
    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-         const meta = e.metaKey || e.ctrlKey
+      const isMacPlatform = isMac()
 
-         if (meta && e.key === "k") {
+      const handleKeyDown = (e: KeyboardEvent) => {
+         const mod = isMacPlatform ? e.metaKey : e.ctrlKey
+         if (!mod) return
+
+         if (e.key === "k") {
             e.preventDefault()
             setPaletteOpen(true)
             return
          }
 
-         if (meta && e.key === "Enter") {
+         if (e.key === "Enter") {
             e.preventDefault()
             handleExecuteQuery()
             return
          }
 
-         if (meta && !e.shiftKey && e.key === "n") {
+         if (!e.shiftKey && e.key === "n") {
             e.preventDefault()
             handleNewQuery()
             return
          }
 
-         if (meta && e.key === "w") {
+         if (e.key === "w") {
             e.preventDefault()
             handleCloseTab()
             return
          }
 
-         if (meta && e.key === "Tab") {
+         if (e.key === "Tab") {
             e.preventDefault()
             handleSwitchTab(e.shiftKey ? -1 : 1)
             return
          }
       }
 
-      window.addEventListener("keydown", handleKeyDown)
-      return () => window.removeEventListener("keydown", handleKeyDown)
+      document.addEventListener("keydown", handleKeyDown, true)
+      return () => document.removeEventListener("keydown", handleKeyDown, true)
    }, [handleExecuteQuery, handleNewQuery, handleCloseTab, handleSwitchTab])
 
    const selectedEnv = selectedEnvironmentId
@@ -349,8 +353,14 @@ function AppContent() {
                                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                                  <span className="opacity-80 font-medium">Search tables, queries, commands...</span>
                                  <div className="ml-auto flex items-center gap-1 opacity-50">
-                                    <kbd className="bg-bg-primary text-[10px] font-mono px-1.5 py-[2px] rounded border border-border/60 shadow-sm leading-none shrink-0">⌘</kbd>
-                                    <kbd className="bg-bg-primary text-[10px] font-mono px-1.5 py-[2px] rounded border border-border/60 shadow-sm leading-none shrink-0">K</kbd>
+                                     {isMac() ? (
+                                        <>
+                                           <kbd className="bg-bg-primary text-[10px] font-mono px-1.5 py-[2px] rounded border border-border/60 shadow-sm leading-none shrink-0">⌘</kbd>
+                                           <kbd className="bg-bg-primary text-[10px] font-mono px-1.5 py-[2px] rounded border border-border/60 shadow-sm leading-none shrink-0">K</kbd>
+                                        </>
+                                     ) : (
+                                        <kbd className="bg-bg-primary text-[10px] font-mono px-1.5 py-[2px] rounded border border-border/60 shadow-sm leading-none shrink-0">Ctrl+K</kbd>
+                                     )}
                                  </div>
                               </button>
                            </div>
@@ -501,20 +511,32 @@ function AppContent() {
                                        className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-quaternary border border-border/80 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
                                     >
                                        <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">New Query Workspace</span>
-                                       <div className="flex items-center gap-1 opacity-60">
-                                          <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">⌘</kbd>
-                                          <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">N</kbd>
-                                       </div>
-                                    </button>
-                                    <button 
-                                       onClick={() => setPaletteOpen(true)}
-                                       className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-quaternary border border-border/80 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-                                    >
-                                       <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">Global Search</span>
-                                       <div className="flex items-center gap-1 opacity-60">
-                                          <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">⌘</kbd>
-                                          <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">K</kbd>
-                                       </div>
+                                        <div className="flex items-center gap-1 opacity-60">
+                                           {isMac() ? (
+                                              <>
+                                                 <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">⌘</kbd>
+                                                 <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">N</kbd>
+                                              </>
+                                           ) : (
+                                              <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">Ctrl+N</kbd>
+                                           )}
+                                        </div>
+                                     </button>
+                                     <button 
+                                        onClick={() => setPaletteOpen(true)}
+                                        className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-quaternary border border-border/80 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                                     >
+                                        <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">Global Search</span>
+                                        <div className="flex items-center gap-1 opacity-60">
+                                           {isMac() ? (
+                                              <>
+                                                 <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">⌘</kbd>
+                                                 <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">K</kbd>
+                                              </>
+                                           ) : (
+                                              <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">Ctrl+K</kbd>
+                                           )}
+                                        </div>
                                     </button>
                                  </div>
                               </div>

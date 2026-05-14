@@ -11,6 +11,7 @@ import { useWorkspaceStore } from "../stores/workspaceStore"
 import { useSettingsStore } from "../stores/settingsStore"
 import { useSavedQueriesStore } from "../stores/savedQueriesStore"
 import { useHistoryStore } from "../stores/historyStore"
+import { isMac } from "../lib/types"
 
 interface CommandPaletteProps {
    isOpen: boolean
@@ -62,7 +63,7 @@ export function CommandPalette({ isOpen, onClose, onExecuteQuery, onClearResults
          label: "New Query",
          description: "Open a new query tab",
          icon: <IconFileCode className="h-4 w-4" />,
-         shortcut: "⌘N",
+          shortcut: isMac() ? "⌘N" : "Ctrl+N",
          category: "action",
          onSelect: () => openTab(),
       },
@@ -71,7 +72,7 @@ export function CommandPalette({ isOpen, onClose, onExecuteQuery, onClearResults
          label: "Run Query",
          description: "Execute the current query",
          icon: <IconPlayerPlay className="h-4 w-4" />,
-         shortcut: "⌘⏎",
+          shortcut: isMac() ? "⌘⏎" : "Ctrl+↵",
          category: "action",
          onSelect: () => onExecuteQuery?.(),
       },
@@ -80,7 +81,7 @@ export function CommandPalette({ isOpen, onClose, onExecuteQuery, onClearResults
          label: "Save Query",
          description: "Save the current query",
          icon: <IconDeviceFloppy className="h-4 w-4" />,
-         shortcut: "⌘S",
+          shortcut: isMac() ? "⌘S" : "Ctrl+S",
          category: "action",
          onSelect: () => { /* save handled in editor */ },
       },
