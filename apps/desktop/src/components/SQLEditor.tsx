@@ -16,6 +16,7 @@ interface SQLEditorProps {
    onChange: (value: string) => void
    onExecute: () => void
    onSettingsOpen: () => void
+   onCommandMode?: () => void
    isExecuting: boolean
    executionTimeMs: number | null
 }
@@ -30,7 +31,7 @@ function parseVimMode(text: string): VimMode | null {
    return null
 }
 
-export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, isExecuting, executionTimeMs }: SQLEditorProps) {
+export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, onCommandMode, isExecuting, executionTimeMs }: SQLEditorProps) {
    const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
    const vimModeRef = useRef<{ dispose: () => void } | null>(null)
    const vimObserverRef = useRef<MutationObserver | null>(null)
@@ -124,19 +125,29 @@ export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, isExecut
             }
          })
 
-         if (vimEnabled && vimStatusRef.current) {
-            const { initVimMode } = await import("monaco-vim")
-            vimModeRef.current = initVimMode(monacoEditor, vimStatusRef.current)
-            setupVimObserver()
-            monacoEditor.onDidChangeModelContent(() => {
-               onChange(monacoEditor.getValue())
-            })
-         }
-      },
-      [vimEnabled, onChange],
-   )
+          monacoEditor.onKeyDown((e) => {
+             if (e.browserEvent.key !== ":") return
+             const state = useEditorStore.getState()
+             if (state.vimEnabled && state.vimMode === "normal") {
+                e.preventDefault()
+                e.stopPropagation()
+                onCommandMode?.()
+             }
+          })
 
-   const handleChange = useCallback(
+          if (vimEnabled && vimStatusRef.current) {
+             const { initVimMode } = await import("monaco-vim")
+             vimModeRef.current = initVimMode(monacoEditor, vimStatusRef.current)
+             setupVimObserver()
+             monacoEditor.onDidChangeModelContent(() => {
+                onChange(monacoEditor.getValue())
+             })
+           }
+        },
+        [vimEnabled, onChange, onCommandMode],
+    )
+
+    const handleChange = useCallback(
       (newValue: string | undefined) => {
          if (newValue !== undefined && !vimEnabled) {
             onChange(newValue)
@@ -291,7 +302,7 @@ export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, isExecut
                      padding: { top: 12, bottom: 12 },
                      suggestOnTriggerCharacters: true,
                      quickSuggestions: true,
-                       scrollbar: { vertical: "hidden", horizontal: "hidden", verticalScrollbarSize: 0, horizontalScrollbarSize: 0, alwaysConsumeMouseWheel: false },
+                      scrollbar: { vertical: "hidden", horizontal: "hidden", verticalScrollbarSize: 0, horizontalScrollbarSize: 0, alwaysConsumeMouseWheel: false },
                       cursorBlinking: "solid",
                       cursorSmoothCaretAnimation: "off",
                       smoothScrolling: false,
@@ -302,7 +313,7 @@ export function SQLEditor({ value, onChange, onExecute, onSettingsOpen, isExecut
                   }}
                />
             </Suspense>
-            <div ref={vimStatusRef} className="hidden" />
+            {vimEnabled && <div ref={vimStatusRef} className="h-5 text-[10px] bg-bg-tertiary border-t border-border flex items-center px-2 text-text-muted font-mono shrink-0" />}
          </div>
       </div>
    )

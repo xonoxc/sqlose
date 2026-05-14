@@ -10,7 +10,7 @@ interface WorkspaceStore {
    activeTabId: string | null
    paneSizes: PaneSizes
 
-   openTab: (environmentId?: string) => Result<Tab, AppError>
+   openTab: (environmentId?: string, overrides?: Partial<Tab>) => Result<Tab, AppError>
    closeTab: (tabId: string) => Result<{ closedId: string; newActiveId: string | null }, AppError>
    setActiveTab: (tabId: string) => Result<string, AppError>
    updateTab: (tabId: string, updates: Partial<Tab>) => Result<Tab, AppError>
@@ -37,14 +37,16 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             })
          },
 
-         openTab: (environmentId?: string) => {
-            const newTab = createTab(environmentId ?? null)
-            set((state) => ({
-               tabs: [...state.tabs, newTab],
-               activeTabId: newTab.id,
-            }))
-            return ok(newTab)
-         },
+          openTab: (environmentId?: string, overrides?: Partial<Tab>) => {
+             const tableName = overrides?.tableName
+             const newTab = createTab(environmentId ?? null, tableName)
+             const merged = { ...newTab, ...overrides }
+             set((state) => ({
+                tabs: [...state.tabs, merged],
+                activeTabId: merged.id,
+             }))
+             return ok(merged)
+          },
 
          closeTab: (tabId: string) => {
             const state = get()

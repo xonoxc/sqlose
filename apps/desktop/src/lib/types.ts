@@ -13,6 +13,7 @@ export interface Tab {
    result: QueryResult | null
    error: string | null
    createdAt: string
+   tableName?: string
 }
 
 export interface PaneSizes {
@@ -92,19 +93,20 @@ export function generateTabTitle(query: string): string {
    return extractTableName(query)
 }
 
-export function createTab(environmentId: string | null = null): Tab {
+export function createTab(environmentId: string | null = null, tableName?: string): Tab {
    const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
    return {
       id,
       type: "query",
-      title: "New Query",
+      title: tableName ?? "New Query",
       environmentId,
       isDirty: false,
       isExecuting: false,
-      query: "",
+      query: tableName ? `SELECT * FROM ${tableName} LIMIT 100` : "",
       result: null,
       error: null,
       createdAt: new Date().toISOString(),
+      tableName,
    }
 }
 

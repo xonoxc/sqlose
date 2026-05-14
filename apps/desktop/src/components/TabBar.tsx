@@ -1,7 +1,7 @@
 import { useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { cn } from "@sqlose/ui"
-import { IconX, IconPlus, IconLoader2 } from "@tabler/icons-react"
+import { IconX, IconPlus, IconLoader2, IconTable } from "@tabler/icons-react"
 import type { Tab } from "../lib/types"
 import { useWorkspaceStore } from "../stores/workspaceStore"
 
@@ -92,7 +92,11 @@ function TabItem({
       >
          {tab.isExecuting && <IconLoader2 className="h-3 w-3 animate-spin text-accent shrink-0" />}
          {!tab.isExecuting && tab.isDirty && <span className="h-1.5 w-1.5 rounded-full bg-accent/70 shrink-0" />}
-         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 shrink-0"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          {tab.tableName ? (
+             <IconTable className="h-3 w-3 opacity-60 shrink-0" />
+          ) : (
+             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 shrink-0"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          )}
          <span className="truncate max-w-36 text-[11px]">{tab.title}</span>
          <button
             onClick={onClose}

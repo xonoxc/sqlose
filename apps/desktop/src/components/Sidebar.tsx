@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo, useEffect } from "react"
+import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@sqlose/ui"
 import {
    IconChevronRight, IconDatabase, IconTable, IconRefresh, IconKey, IconSearch,
    IconHistory, IconBookmark, IconCode, IconFileCode,
    IconLayoutSidebarLeftCollapse, IconSettings, IconClock, IconStar,
+   IconCircleDot,
 } from "@tabler/icons-react"
 import type { Environment, DBType } from "@sqlose/shared"
 import { useEnvironmentStore } from "../stores/environmentStore"
@@ -11,7 +12,7 @@ import { useEditorStore } from "../stores/editorStore"
 import { useWorkspaceStore } from "../stores/workspaceStore"
 import { useHistoryStore } from "../stores/historyStore"
 import { useSavedQueriesStore } from "../stores/savedQueriesStore"
-import { listTables, getTableColumns, type ColumnInfo } from "../lib/schema"
+import { useDatabaseStore } from "../stores/databaseStore"
 
 interface AppSidebarProps {
    onSettingsOpen: () => void
@@ -19,10 +20,6 @@ interface AppSidebarProps {
    onOpenQuery: (sql: string) => void
    collapsed: boolean
    onToggleCollapse: () => void
-}
-
-interface TableCache {
-   [tableName: string]: ColumnInfo[]
 }
 
 type NavTab = "playground" | "saved" | "history" | null
@@ -35,6 +32,7 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
    const openTab = useWorkspaceStore((s) => s.openTab)
    const historyEntries = useHistoryStore((s) => s.entries)
    const savedQueries = useSavedQueriesStore((s) => s.queries)
+
    const savedQueryNamesBySql = useMemo(() => {
       const map = new Map<string, string>()
       for (const q of savedQueries) {
@@ -44,52 +42,38 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
       return map
    }, [savedQueries])
 
+   const tables = useDatabaseStore((s) => s.tables)
+   const tableColumns = useDatabaseStore((s) => s.tableColumns)
+   const schemaLoading = useDatabaseStore((s) => s.schemaLoading)
+   const schemaError = useDatabaseStore((s) => s.schemaError)
+   const loadingColumnIds = useDatabaseStore((s) => s.loadingColumnIds)
+   const expandedTableIds = useDatabaseStore((s) => s.expandedTableIds)
+   const activeTableId = useDatabaseStore((s) => s.activeTableId)
+   const keyboardFocusedIndex = useDatabaseStore((s) => s.keyboardFocusedIndex)
+   const fetchTables = useDatabaseStore((s) => s.fetchTables)
+   const fetchColumns = useDatabaseStore((s) => s.fetchColumns)
+   const setExpanded = useDatabaseStore((s) => s.setExpanded)
+   const setActiveTable = useDatabaseStore((s) => s.setActiveTable)
+   const setKeyboardFocusedIndex = useDatabaseStore((s) => s.setKeyboardFocusedIndex)
+    const reset = useDatabaseStore((s) => s.reset)
+
    const [search, setSearch] = useState("")
-   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
-   const [tableColumns, setTableColumns] = useState<TableCache>({})
-   const [schemaLoading, setSchemaLoading] = useState(false)
-   const [schemaError, setSchemaError] = useState<string | null>(null)
-   const [loadingColumns, setLoadingColumns] = useState<Set<string>>(new Set())
-   const [activeTableId, setActiveTableId] = useState<string | null>(null)
    const [activeNav, setActiveNav] = useState<NavTab>(null)
    const [tableTreeExpanded, setTableTreeExpanded] = useState(true)
+
+   const tableListRef = useRef<HTMLDivElement>(null)
 
    const selectedEnv = selectedEnvironmentId
       ? environments.find((e: Environment) => e.id === selectedEnvironmentId) ?? null
       : null
-   const [tables, setTables] = useState<string[]>([])
 
    useEffect(() => {
       if (!selectedEnvironmentId || !selectedEnv) {
-         setTables([])
-         setTableColumns({})
-         setExpandedTables(new Set())
-         setSchemaError(null)
+         reset()
          return
       }
-
-      let cancelled = false
-
-      const fetchTables = async () => {
-         setSchemaLoading(true)
-         setSchemaError(null)
-         try {
-            const result = await listTables(selectedEnvironmentId, selectedEnv.dbType as DBType)
-            if (!cancelled) {
-               setTables(result)
-               setSchemaLoading(false)
-            }
-         } catch (err) {
-            if (!cancelled) {
-               setSchemaError(err instanceof Error ? err.message : "Failed to load tables")
-               setSchemaLoading(false)
-            }
-         }
-      }
-
-      fetchTables()
-      return () => { cancelled = true }
-   }, [selectedEnvironmentId, selectedEnv])
+      fetchTables(selectedEnvironmentId, selectedEnv.dbType as DBType)
+   }, [selectedEnvironmentId, selectedEnv, fetchTables, reset])
 
    const filteredTables = useMemo(() => {
       if (!search) return tables
@@ -105,66 +89,87 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
       [selectEnvironment, setSelectedEnvironment],
    )
 
-   const toggleTable = useCallback(async (tableName: string) => {
+   const handleTableClick = useCallback((tableName: string) => {
+      setActiveTable(tableName)
+      onOpenTable(tableName)
+   }, [setActiveTable, onOpenTable])
+
+   const handleChevronClick = useCallback((e: React.MouseEvent, tableName: string) => {
+      e.stopPropagation()
+      e.preventDefault()
       if (!selectedEnvironmentId || !selectedEnv) return
-
-      setActiveTableId(tableName)
-
-      if (expandedTables.has(tableName)) {
-         setExpandedTables(prev => {
-            const next = new Set(prev)
-            next.delete(tableName)
-            return next
-         })
-         return
+      setExpanded(tableName)
+      if (!tableColumns[tableName]) {
+         fetchColumns(selectedEnvironmentId, tableName, selectedEnv.dbType as DBType)
       }
+   }, [selectedEnvironmentId, selectedEnv, setExpanded, tableColumns, fetchColumns])
 
-      if (tableColumns[tableName]) {
-         setExpandedTables(prev => new Set(prev).add(tableName))
-         return
-      }
+   const handleRefresh = useCallback(async () => {
+      if (!selectedEnvironmentId || !selectedEnv) return
+      reset()
+      fetchTables(selectedEnvironmentId, selectedEnv.dbType as DBType)
+   }, [selectedEnvironmentId, selectedEnv, reset, fetchTables])
 
-      setLoadingColumns(prev => new Set(prev).add(tableName))
-      try {
-         const columns = await getTableColumns(selectedEnvironmentId, tableName, selectedEnv.dbType as DBType)
-         setTableColumns(prev => ({ ...prev, [tableName]: columns }))
-         setExpandedTables(prev => new Set(prev).add(tableName))
-      } catch {
-         setTableColumns(prev => ({ ...prev, [tableName]: [] }))
-         setExpandedTables(prev => new Set(prev).add(tableName))
-      } finally {
-         setLoadingColumns(prev => {
-            const next = new Set(prev)
-            next.delete(tableName)
-            return next
-         })
+   const handleNavClick = useCallback((tab: NavTab) => {
+      setActiveNav(prev => prev === tab ? null : tab)
+   }, [])
+
+   const filteredIndex = useMemo(() => {
+      const target = activeTableId ? filteredTables.indexOf(activeTableId) : -1
+      return target
+   }, [activeTableId, filteredTables])
+
+   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+      if (filteredTables.length === 0) return
+
+      let currentIndex = keyboardFocusedIndex >= 0 ? keyboardFocusedIndex : (filteredIndex >= 0 ? filteredIndex : 0)
+
+      switch (e.key) {
+         case "ArrowDown":
+            e.preventDefault()
+            currentIndex = Math.min(currentIndex + 1, filteredTables.length - 1)
+            setKeyboardFocusedIndex(currentIndex)
+            break
+         case "ArrowUp":
+            e.preventDefault()
+            currentIndex = Math.max(currentIndex - 1, 0)
+            setKeyboardFocusedIndex(currentIndex)
+            break
+         case "Enter": {
+            e.preventDefault()
+            const table = filteredTables[currentIndex]
+            if (table) {
+               handleTableClick(table)
+            }
+            break
+         }
+         case "ArrowRight": {
+            e.preventDefault()
+            const table = filteredTables[currentIndex]
+            if (table && selectedEnvironmentId && selectedEnv) {
+               if (!expandedTableIds.includes(table)) {
+                  setExpanded(table)
+                  if (!tableColumns[table]) {
+                     fetchColumns(selectedEnvironmentId, table, selectedEnv.dbType as DBType)
+                  }
+               }
+            }
+            break
+         }
+         case "ArrowLeft": {
+            e.preventDefault()
+            const table = filteredTables[currentIndex]
+            if (table && expandedTableIds.includes(table)) {
+               setExpanded(table)
+            }
+            break
+         }
       }
-   }, [selectedEnvironmentId, selectedEnv, expandedTables, tableColumns])
+   }, [filteredTables, keyboardFocusedIndex, filteredIndex, setKeyboardFocusedIndex, handleTableClick, selectedEnvironmentId, selectedEnv, expandedTableIds, setExpanded, tableColumns, fetchColumns])
 
    const handleTableDoubleClick = useCallback((tableName: string) => {
       onOpenTable(tableName)
    }, [onOpenTable])
-
-   const handleRefresh = useCallback(async () => {
-      if (!selectedEnvironmentId || !selectedEnv) return
-      setTableColumns({})
-      setExpandedTables(new Set())
-      setSchemaLoading(true)
-      setSchemaError(null)
-      try {
-         const result = await listTables(selectedEnvironmentId, selectedEnv.dbType as DBType)
-         setTables(result)
-      } catch (err) {
-         setSchemaError(err instanceof Error ? err.message : "Failed to load tables")
-      } finally {
-         setSchemaLoading(false)
-      }
-   }, [selectedEnvironmentId, selectedEnv])
-
-   const handleNavClick = useCallback((tab: NavTab) => {
-      setActiveNav(prev => prev === tab ? null : tab)
-      setActiveTableId(null)
-   }, [])
 
    if (collapsed) {
       return (
@@ -352,7 +357,7 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                      className="flex items-center gap-1.5"
                   >
                      <IconChevronRight className={cn("h-3 w-3 text-text-muted transition-transform", tableTreeExpanded && "rotate-90")} />
-                     <span className="text-[10px] font-semibold tracking-widest uppercase text-text-muted/60">Database</span>
+                     <span className="text-[10px] font-semibold tracking-widest uppercase text-text-muted/60">Tables</span>
                   </button>
                   {tableTreeExpanded && (
                      <div className="flex items-center gap-0.5">
@@ -370,21 +375,6 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
 
                {tableTreeExpanded && (
                   <div className="flex-1 flex flex-col min-h-0 px-2">
-                     {/* Section Tabs: Tables | Views | Indexes */}
-                     <div className="flex items-center gap-0.5 px-1 mb-2">
-                        {(["Tables", "Views", "Indexes"] as const).map((section) => (
-                           <button
-                              key={section}
-                              className={cn(
-                                 "flex-1 text-[10px] font-semibold tracking-wide py-1 px-2 rounded transition-colors",
-                                 section === "Tables" ? "text-accent bg-accent/10" : "text-text-muted hover:text-text-secondary hover:bg-bg-quaternary/30"
-                              )}
-                           >
-                              {section}
-                           </button>
-                        ))}
-                     </div>
-
                      {/* Search */}
                      <div className="pb-2 px-1">
                         <div className="flex items-center gap-2 bg-bg-tertiary rounded border border-border px-2.5 py-1.5">
@@ -400,7 +390,14 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                      </div>
 
                      {/* Table List */}
-                     <div className="flex-1 overflow-y-auto custom-scrollbar pb-2">
+                     <div
+                        ref={tableListRef}
+                        className="flex-1 overflow-y-auto custom-scrollbar pb-2"
+                        onKeyDown={handleKeyDown}
+                        tabIndex={0}
+                        role="listbox"
+                        aria-label="Database tables"
+                     >
                         {schemaLoading && tables.length === 0 && (
                            <div className="flex items-center justify-center py-6">
                               <div className="flex flex-col items-center gap-2">
@@ -430,70 +427,101 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                            </div>
                         )}
 
-                        {filteredTables.map((tableName) => (
-                           <div key={tableName}>
-                              <button
-                                 onClick={() => toggleTable(tableName)}
-                                 onDoubleClick={() => handleTableDoubleClick(tableName)}
-                                 className={cn(
-                                    "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors outline-none focus-visible:ring-1 focus-visible:ring-accent",
-                                    activeTableId === tableName
-                                       ? "bg-bg-quaternary/50 text-accent"
-                                       : "text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/30",
-                                 )}
-                              >
-                                 <IconChevronRight
+                        {filteredTables.map((tableName, index) => {
+                           const isActive = activeTableId === tableName
+                           const isExpanded = expandedTableIds.includes(tableName)
+                           const isFocused = keyboardFocusedIndex === index
+                           const columns = tableColumns[tableName]
+                           const isLoadingColumns = loadingColumnIds.includes(tableName)
+
+                           return (
+                              <div key={tableName}>
+                                 <div
+                                    role="option"
+                                    aria-selected={isActive}
                                     className={cn(
-                                       "h-2.5 w-2.5 shrink-0 transition-transform text-text-muted",
-                                       expandedTables.has(tableName) && "rotate-90",
+                                       "flex w-full items-center gap-1.5 rounded-md px-1.5 py-1.5 text-[12px] font-medium transition-all duration-150 outline-none cursor-pointer group",
+                                       isActive
+                                          ? "bg-accent/10 text-accent border-l-[2.5px] border-accent"
+                                          : "text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/30 border-l-[2.5px] border-transparent",
+                                       isFocused && "ring-1 ring-accent/40",
                                     )}
-                                 />
-                                 <IconTable className="h-3.5 w-3.5 shrink-0 opacity-70" />
-                                 <span className="truncate flex-1 text-left">{tableName}</span>
-                                 {tableColumns[tableName] && (
-                                    <span className="text-[9px] text-text-muted font-mono">{tableColumns[tableName].length}</span>
-                                 )}
-                                 {loadingColumns.has(tableName) && (
-                                    <div className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-                                 )}
-                              </button>
-
-                              {expandedTables.has(tableName) && tableColumns[tableName] && (
-                                 <div className="ml-4 border-l border-border/60 ml-5">
-                                    {tableColumns[tableName].length === 0 && !loadingColumns.has(tableName) && (
-                                       <div className="py-1.5 px-3 text-[9px] text-text-muted italic">No columns</div>
-                                    )}
-                                    {tableColumns[tableName].map((col) => (
-                                       <div
-                                          key={col.name}
-                                          className="flex items-center gap-2 px-3 py-0.5 hover:bg-bg-quaternary/20 transition-colors group"
-                                       >
-                                          {col.primaryKey ? (
-                                             <IconKey className="h-2 w-2 shrink-0 text-warning" />
-                                          ) : (
-                                             <div className="h-1.5 w-1.5 shrink-0 rounded-[2px] bg-accent/40" />
+                                    onClick={() => handleTableClick(tableName)}
+                                    onDoubleClick={() => handleTableDoubleClick(tableName)}
+                                 >
+                                    {/* Chevron button - separate from table selection */}
+                                    <button
+                                       onClick={(e) => handleChevronClick(e, tableName)}
+                                       className={cn(
+                                          "h-4 w-4 rounded flex items-center justify-center shrink-0 transition-colors",
+                                          "hover:bg-bg-quaternary/60 hover:text-text-primary",
+                                          isExpanded && "text-accent"
+                                       )}
+                                       aria-label={isExpanded ? "Collapse columns" : "Expand columns"}
+                                       tabIndex={-1}
+                                    >
+                                       <IconChevronRight
+                                          className={cn(
+                                             "h-2.5 w-2.5 transition-transform duration-160 ease-out",
+                                             isExpanded && "rotate-90",
                                           )}
-                                          <span className="text-[10px] font-mono text-text-primary truncate">{col.name}</span>
-                                          <span className="text-[9px] font-mono text-text-muted/60 truncate ml-auto">{col.type}</span>
-                                          <span className={cn(
-                                             "text-[8px] font-mono px-1 rounded shrink-0",
-                                             col.nullable ? "text-text-muted/50" : "text-error/60",
-                                          )}>
-                                             {col.nullable ? "NULL" : "NN"}
-                                          </span>
-                                       </div>
-                                    ))}
-                                 </div>
-                              )}
+                                       />
+                                    </button>
 
-                              {expandedTables.has(tableName) && loadingColumns.has(tableName) && (
-                                 <div className="flex items-center gap-2 px-5 py-1.5">
-                                    <div className="h-2.5 w-2.5 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-                                    <span className="text-[9px] text-text-muted">Loading columns...</span>
+                                    <IconTable className={cn("h-3.5 w-3.5 shrink-0 opacity-70", isActive && "opacity-100")} />
+                                    <span className="truncate flex-1 text-left">{tableName}</span>
+
+                                    {columns && (
+                                       <span className="text-[9px] text-text-muted/50 font-mono shrink-0">{columns.length}</span>
+                                    )}
+                                    {isLoadingColumns && (
+                                       <div className="h-2.5 w-2.5 rounded-full border-[1.5px] border-accent border-t-transparent animate-spin shrink-0" />
+                                    )}
                                  </div>
-                              )}
-                           </div>
-                        ))}
+
+                                 {/* Expanded columns */}
+                                 {isExpanded && (
+                                    <div className="overflow-hidden transition-all duration-200 ease-out">
+                                       {isLoadingColumns && !columns && (
+                                          <div className="flex items-center gap-2 pl-6 py-1.5">
+                                             <div className="h-2 w-2 rounded-full border-[1.5px] border-accent border-t-transparent animate-spin" />
+                                             <span className="text-[9px] text-text-muted">Loading...</span>
+                                          </div>
+                                       )}
+                                       {columns && columns.length === 0 && !isLoadingColumns && (
+                                          <div className="py-1 pl-6 pr-2 text-[9px] text-text-muted italic">No columns</div>
+                                       )}
+                                       {columns && columns.length > 0 && (
+                                          <div className="ml-3 border-l border-border/50 pl-2 pb-1 space-y-[1px]">
+                                             {columns.map((col) => (
+                                                <div
+                                                   key={col.name}
+                                                   className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-bg-quaternary/20 transition-colors group/col"
+                                                >
+                                                   {col.primaryKey ? (
+                                                      <IconKey className="h-2.5 w-2.5 shrink-0 text-amber-400" />
+                                                   ) : (
+                                                      <IconCircleDot className="h-2 w-2 shrink-0 text-text-muted/30" />
+                                                   )}
+                                                   <span className="text-[10px] font-mono text-text-primary truncate">{col.name}</span>
+                                                   <span className="text-[8px] font-mono text-text-muted/50 truncate ml-auto">{col.type}</span>
+                                                   <span className={cn(
+                                                      "text-[7px] font-mono px-1 rounded shrink-0 leading-none py-[2px]",
+                                                      col.nullable
+                                                         ? "text-text-muted/40 bg-bg-tertiary/50"
+                                                         : "text-error/50 bg-error/5",
+                                                   )}>
+                                                      {col.nullable ? "NULL" : "NN"}
+                                                   </span>
+                                                </div>
+                                             ))}
+                                          </div>
+                                       )}
+                                    </div>
+                                 )}
+                              </div>
+                           )
+                        })}
                      </div>
                   </div>
                )}

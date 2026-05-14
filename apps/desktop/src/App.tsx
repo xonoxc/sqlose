@@ -12,11 +12,13 @@ import {
    CommandPalette,
    SettingsPanel,
    Dashboard,
+   TableBrowser,
 } from "./components"
 import { useEnvironmentStore } from "./stores/environmentStore"
 import { useEditorStore } from "./stores/editorStore"
 import { useWorkspaceStore } from "./stores/workspaceStore"
 import { useSettingsStore } from "./stores/settingsStore"
+import { useDatabaseStore } from "./stores/databaseStore"
 import { useHistoryStore } from "./stores/historyStore"
 import { isMac } from "./lib/types"
 import {
@@ -76,6 +78,7 @@ function AppContent() {
    const updatePaneSizes = useWorkspaceStore(s => s.updatePaneSizes)
 
    const addHistoryEntry = useHistoryStore(s => s.addEntry)
+   const clearActiveTable = useDatabaseStore(s => s.setActiveTable)
 
    const RESULTS_MIN_HEIGHT = 80
    const RESULTS_MAX_HEIGHT = 800
@@ -88,7 +91,12 @@ function AppContent() {
 
    useEffect(() => {
       if (activeTab) {
-         setQueryDraft(activeTab.query)
+         if (activeTab.tableName) {
+            clearActiveTable(activeTab.tableName)
+         } else {
+            clearActiveTable(null)
+            setQueryDraft(activeTab.query)
+         }
       }
    }, [activeTabId])
 
@@ -178,15 +186,12 @@ function AppContent() {
    }, [activeTab])
 
    const handleOpenTable = useCallback((tableName: string) => {
-      const sql = `SELECT * FROM ${tableName} LIMIT 100`
-      const result = openTab()
+      const result = openTab(selectedEnvironmentId ?? undefined, { tableName, title: tableName })
       if (result.isOk()) {
          const tab = result.value
-         updateTab(tab.id, { query: sql, title: tableName })
-         setQueryDraft(sql)
          setActiveTab(tab.id)
       }
-   }, [openTab, updateTab, setQueryDraft, setActiveTab])
+   }, [openTab, selectedEnvironmentId, setActiveTab])
 
    const handleOpenQuery = useCallback((sql: string) => {
       const result = openTab()
@@ -381,146 +386,151 @@ function AppContent() {
                            <TabBar />
                         </div>
 
-                        {/* Editor + Results */}
-                        {activeTabId ? (
-                           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                              {/* Editor */}
-                              <div className="flex-1 flex flex-col min-h-0">
-                                 <SQLEditor
-                                    value={queryDraft}
-                                    onChange={handleQueryChange}
-                                    onExecute={handleExecuteQuery}
-                                    onSettingsOpen={() => setSettingsOpen(true)}
-                                    isExecuting={isExecuting}
-                                    executionTimeMs={executionTimeMs}
-                                 />
-                              </div>
+                         {/* Content: TableBrowser | Editor+Results | Empty */}
+                         {activeTab?.tableName ? (
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                               <TableBrowser />
+                            </div>
+                         ) : activeTabId ? (
+                            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                               {/* Editor */}
+                               <div className="flex-1 flex flex-col min-h-0">
+                                   <SQLEditor
+                                      value={queryDraft}
+                                      onChange={handleQueryChange}
+                                      onExecute={handleExecuteQuery}
+                                      onSettingsOpen={() => setSettingsOpen(true)}
+                                      onCommandMode={() => setPaletteOpen(true)}
+                                      isExecuting={isExecuting}
+                                      executionTimeMs={executionTimeMs}
+                                   />
+                               </div>
 
-                              {/* Boundary Resize Layer */}
-                              <div
-                                 className="h-[3px] -mb-[3px] cursor-row-resize shrink-0 relative z-30 group transition-colors flex items-center justify-center select-none"
-                                 onMouseDown={handleResultsDividerMouseDown}
-                              >
-                                 <div className={cn(
-                                    "absolute inset-x-0 top-0 h-[1px] w-full transition-colors",
-                                    isExecuting ? "bg-accent/40" : "bg-transparent group-hover:bg-accent/25"
-                                 )} />
-                                 <div className={cn(
-                                    "h-[2px] w-10 rounded-full absolute transition-opacity opacity-0 group-hover:opacity-100",
-                                    isExecuting ? "bg-accent" : "bg-accent/50"
-                                 )} />
-                              </div>
+                               {/* Boundary Resize Layer */}
+                               <div
+                                  className="h-[3px] -mb-[3px] cursor-row-resize shrink-0 relative z-30 group transition-colors flex items-center justify-center select-none"
+                                  onMouseDown={handleResultsDividerMouseDown}
+                               >
+                                  <div className={cn(
+                                     "absolute inset-x-0 top-0 h-[1px] w-full transition-colors",
+                                     isExecuting ? "bg-accent/40" : "bg-transparent group-hover:bg-accent/25"
+                                  )} />
+                                  <div className={cn(
+                                     "h-[2px] w-10 rounded-full absolute transition-opacity opacity-0 group-hover:opacity-100",
+                                     isExecuting ? "bg-accent" : "bg-accent/50"
+                                  )} />
+                               </div>
 
-                              {/* Results Panel */}
-                              <div
-                                 className={cn(
-                                    "flex flex-col shrink-0 bg-bg-primary shadow-[0_-4px_20px_rgba(0,0,0,0.35)] relative z-20 border-t border-border/60",
-                                    resultsCollapsed && "overflow-hidden"
-                                 )}
-                                 style={{
-                                    height: resultsCollapsed ? "34px" : `${paneSizes.resultsHeight}px`,
-                                    minHeight: resultsCollapsed ? "34px" : `${RESULTS_MIN_HEIGHT}px`,
-                                 }}
-                              >
-                                 {/* Results Header */}
-                                 <div className="flex items-center justify-between px-3 py-1 bg-bg-tertiary/80 shrink-0 border-b border-border/30">
-                                    <div className="flex items-center gap-3">
-                                       <button
-                                          onClick={() => setResultsCollapsed(!resultsCollapsed)}
-                                          className="flex items-center gap-1.5 rounded text-text-muted hover:text-text-primary transition-colors pr-1"
-                                       >
-                                          <div className="h-5 w-5 bg-bg-secondary border border-border/40 rounded flex items-center justify-center shadow-sm">
-                                             {resultsCollapsed ? <IconChevronRight className="h-3.5 w-3.5" /> : <IconChevronDown className="h-3.5 w-3.5" />}
-                                          </div>
-                                          <span className="text-[12px] font-semibold tracking-wide text-text-primary">Results</span>
-                                       </button>
-                                       
-                                       {activeTab?.result && (
-                                          <div className="flex items-center gap-2 text-[11px] text-text-muted/80 font-sans tracking-wide border-l border-border/60 pl-3">
-                                             <span>{activeTab.result.rowCount} row{activeTab.result.rowCount !== 1 ? "s" : ""}</span>
-                                             {executionTimeMs !== null && (
-                                                <>
-                                                   <span className="opacity-40">•</span>
-                                                   <span className="font-mono text-[10px]">{executionTimeMs}ms</span>
-                                                </>
-                                             )}
-                                          </div>
-                                       )}
-                                       {isExecuting && (
-                                          <div className="flex items-center gap-1.5 text-accent border-l border-border/60 pl-3">
-                                             <div className="h-3 w-3 rounded-full border-[2px] border-accent/30 border-t-accent animate-spin" />
-                                             <span className="text-[11px] font-medium tracking-wide">Executing</span>
-                                          </div>
-                                       )}
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                       {activeTab?.result && (
-                                          <>
-                                             <button
-                                                onClick={() => handleCopyResults(true)}
-                                                className="h-6 px-2 flex items-center gap-1.5 rounded text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors"
-                                                title="Copy results with headers"
-                                             >
-                                                <IconCopy className="h-3.5 w-3.5 opacity-70" />
-                                                Copy
-                                             </button>
-                                             <button
-                                                className="h-6 px-2 flex items-center gap-1.5 rounded text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors"
-                                                title="Export results"
-                                             >
-                                                <IconDownload className="h-3.5 w-3.5 opacity-70" />
-                                                Export
-                                             </button>
-                                             <div className="w-[1px] h-3.5 bg-border/80 mx-1" />
-                                             <button
-                                                onClick={handleClearResults}
-                                                className="h-6 w-6 flex items-center justify-center rounded text-text-muted hover:text-error hover:bg-error/10 transition-colors"
-                                                title="Clear results"
-                                             >
-                                                <IconTrash className="h-3.5 w-3.5 opacity-70" />
-                                             </button>
-                                          </>
-                                       )}
-                                    </div>
-                                 </div>
-                                 {!resultsCollapsed && (
-                                    <div className="flex-1 overflow-hidden z-0 relative">
-                                       <ResultsPanel
-                                          result={activeTab?.result ?? null}
-                                          error={activeTab?.error ?? null}
-                                          isExecuting={isExecuting}
-                                          executionTimeMs={executionTimeMs}
-                                          rowCount={activeTab?.result?.rowCount ?? null}
-                                       />
-                                    </div>
-                                 )}
-                              </div>
-                           </div>
-                        ) : (
-                           <div className="flex-1 flex flex-col items-center justify-center min-h-0 bg-bg-primary overflow-hidden">
-                              <div className="flex flex-col items-center max-w-sm text-center">
-                                 <div className="w-16 h-16 rounded-2xl bg-bg-secondary border border-border shadow-2xl flex items-center justify-center mb-6 opacity-80">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
-                                 </div>
-                                 <h2 className="text-[15px] font-semibold text-text-primary mb-2 tracking-wide">Ready to write queries</h2>
-                                 <p className="text-[13px] text-text-muted mb-8 leading-relaxed">Start interacting with your database by creating a new query tab or using the command system.</p>
-                                 
-                                 <div className="flex flex-col gap-2 w-full max-w-[280px]">
-                                    <button 
-                                       onClick={handleNewQuery}
-                                       className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-quaternary border border-border/80 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
-                                    >
-                                       <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">New Query Workspace</span>
-                                        <div className="flex items-center gap-1 opacity-60">
-                                           {isMac() ? (
-                                              <>
-                                                 <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">⌘</kbd>
-                                                 <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">N</kbd>
-                                              </>
-                                           ) : (
-                                              <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">Ctrl+N</kbd>
-                                           )}
-                                        </div>
+                               {/* Results Panel */}
+                               <div
+                                  className={cn(
+                                     "flex flex-col shrink-0 bg-bg-primary shadow-[0_-4px_20px_rgba(0,0,0,0.35)] relative z-20 border-t border-border/60",
+                                     resultsCollapsed && "overflow-hidden"
+                                  )}
+                                  style={{
+                                     height: resultsCollapsed ? "34px" : `${paneSizes.resultsHeight}px`,
+                                     minHeight: resultsCollapsed ? "34px" : `${RESULTS_MIN_HEIGHT}px`,
+                                  }}
+                               >
+                                  {/* Results Header */}
+                                  <div className="flex items-center justify-between px-3 py-1 bg-bg-tertiary/80 shrink-0 border-b border-border/30">
+                                     <div className="flex items-center gap-3">
+                                        <button
+                                           onClick={() => setResultsCollapsed(!resultsCollapsed)}
+                                           className="flex items-center gap-1.5 rounded text-text-muted hover:text-text-primary transition-colors pr-1"
+                                        >
+                                           <div className="h-5 w-5 bg-bg-secondary border border-border/40 rounded flex items-center justify-center shadow-sm">
+                                              {resultsCollapsed ? <IconChevronRight className="h-3.5 w-3.5" /> : <IconChevronDown className="h-3.5 w-3.5" />}
+                                           </div>
+                                           <span className="text-[12px] font-semibold tracking-wide text-text-primary">Results</span>
+                                        </button>
+                                        
+                                        {activeTab?.result && (
+                                           <div className="flex items-center gap-2 text-[11px] text-text-muted/80 font-sans tracking-wide border-l border-border/60 pl-3">
+                                              <span>{activeTab.result.rowCount} row{activeTab.result.rowCount !== 1 ? "s" : ""}</span>
+                                              {executionTimeMs !== null && (
+                                                 <>
+                                                    <span className="opacity-40">•</span>
+                                                    <span className="font-mono text-[10px]">{executionTimeMs}ms</span>
+                                                 </>
+                                              )}
+                                           </div>
+                                        )}
+                                        {isExecuting && (
+                                           <div className="flex items-center gap-1.5 text-accent border-l border-border/60 pl-3">
+                                              <div className="h-3 w-3 rounded-full border-[2px] border-accent/30 border-t-accent animate-spin" />
+                                              <span className="text-[11px] font-medium tracking-wide">Executing</span>
+                                           </div>
+                                        )}
+                                     </div>
+                                     <div className="flex items-center gap-1">
+                                        {activeTab?.result && (
+                                           <>
+                                              <button
+                                                 onClick={() => handleCopyResults(true)}
+                                                 className="h-6 px-2 flex items-center gap-1.5 rounded text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors"
+                                                 title="Copy results with headers"
+                                              >
+                                                 <IconCopy className="h-3.5 w-3.5 opacity-70" />
+                                                 Copy
+                                              </button>
+                                              <button
+                                                 className="h-6 px-2 flex items-center gap-1.5 rounded text-[11px] font-medium text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors"
+                                                 title="Export results"
+                                              >
+                                                 <IconDownload className="h-3.5 w-3.5 opacity-70" />
+                                                 Export
+                                              </button>
+                                              <div className="w-[1px] h-3.5 bg-border/80 mx-1" />
+                                              <button
+                                                 onClick={handleClearResults}
+                                                 className="h-6 w-6 flex items-center justify-center rounded text-text-muted hover:text-error hover:bg-error/10 transition-colors"
+                                                 title="Clear results"
+                                              >
+                                                 <IconTrash className="h-3.5 w-3.5 opacity-70" />
+                                              </button>
+                                           </>
+                                        )}
+                                     </div>
+                                  </div>
+                                  {!resultsCollapsed && (
+                                     <div className="flex-1 overflow-hidden z-0 relative">
+                                        <ResultsPanel
+                                           result={activeTab?.result ?? null}
+                                           error={activeTab?.error ?? null}
+                                           isExecuting={isExecuting}
+                                           executionTimeMs={executionTimeMs}
+                                           rowCount={activeTab?.result?.rowCount ?? null}
+                                        />
+                                     </div>
+                                  )}
+                               </div>
+                            </div>
+                         ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center min-h-0 bg-bg-primary overflow-hidden">
+                               <div className="flex flex-col items-center max-w-sm text-center">
+                                  <div className="w-16 h-16 rounded-2xl bg-bg-secondary border border-border shadow-2xl flex items-center justify-center mb-6 opacity-80">
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+                                  </div>
+                                  <h2 className="text-[15px] font-semibold text-text-primary mb-2 tracking-wide">Ready to write queries</h2>
+                                  <p className="text-[13px] text-text-muted mb-8 leading-relaxed">Start interacting with your database by creating a new query tab or using the command system.</p>
+                                  
+                                  <div className="flex flex-col gap-2 w-full max-w-[280px]">
+                                     <button 
+                                        onClick={handleNewQuery}
+                                        className="flex items-center justify-between w-full px-4 py-2.5 rounded-lg bg-bg-tertiary hover:bg-bg-quaternary border border-border/80 transition-colors group focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+                                     >
+                                        <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">New Query Workspace</span>
+                                         <div className="flex items-center gap-1 opacity-60">
+                                            {isMac() ? (
+                                               <>
+                                                  <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">⌘</kbd>
+                                                  <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">N</kbd>
+                                               </>
+                                            ) : (
+                                               <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">Ctrl+N</kbd>
+                                            )}
+                                         </div>
                                      </button>
                                      <button 
                                         onClick={() => setPaletteOpen(true)}
@@ -537,11 +547,11 @@ function AppContent() {
                                               <kbd className="font-mono text-[10px] bg-bg-primary px-1.5 py-0.5 rounded shadow-sm border border-border/40">Ctrl+K</kbd>
                                            )}
                                         </div>
-                                    </button>
-                                 </div>
-                              </div>
-                           </div>
-                        )}
+                                     </button>
+                                  </div>
+                               </div>
+                            </div>
+                         )}
                         <StatusBar 
                            vimMode={vimEnabled ? vimMode : undefined} 
                            dbType={selectedEnv?.dbType}
