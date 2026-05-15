@@ -64,7 +64,8 @@ function extractTableName(sql: string): string {
       if (fromMatch) return `SELECT * FROM ${fromMatch[1]}`
       const selectMatch = cleaned.match(/SELECT\s+(.*?)\s+FROM/i)
       if (selectMatch) {
-         const cols = selectMatch[1].length > 20 ? selectMatch[1].slice(0, 20) + "..." : selectMatch[1]
+         const cols =
+            selectMatch[1].length > 20 ? selectMatch[1].slice(0, 20) + "..." : selectMatch[1]
          return `SELECT ${cols}...`
       }
       return "SELECT..."
@@ -110,7 +111,12 @@ export function createTab(environmentId: string | null = null, tableName?: strin
    }
 }
 
-export function createSavedQuery(name: string, sql: string, tags: string[] = [], environmentId: string | null = null): SavedQuery {
+export function createSavedQuery(
+   name: string,
+   sql: string,
+   tags: string[] = [],
+   environmentId: string | null = null
+): SavedQuery {
    const id = `sq-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
    const now = new Date().toISOString()
    return { id, name, sql, tags, environmentId, createdAt: now, updatedAt: now }
@@ -123,7 +129,7 @@ export function createHistoryEntry(
    duration: number,
    rowCount: number,
    status: "success" | "error",
-   error: string | null,
+   error: string | null
 ): HistoryEntry {
    return {
       id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,

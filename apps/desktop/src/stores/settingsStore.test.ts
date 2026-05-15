@@ -47,28 +47,78 @@ describe("settingsStore", () => {
 
    describe("keybindings", () => {
       it("addKeybinding should add a keybinding", () => {
-         const binding = { action: "query.execute", key: "r", ctrl: true, shift: false, alt: false, meta: false }
+         const binding = {
+            action: "query.execute",
+            key: "r",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            meta: false,
+         }
          useSettingsStore.getState().addKeybinding(binding)
          expect(useSettingsStore.getState().keybindings).toHaveLength(1)
          expect(useSettingsStore.getState().keybindings[0].action).toBe("query.execute")
       })
 
       it("updateKeybinding should update a keybinding at index", () => {
-         useSettingsStore.getState().addKeybinding({ action: "query.execute", key: "r", ctrl: true, shift: false, alt: false, meta: false })
-         const newBinding = { action: "env.create", key: "n", ctrl: true, shift: false, alt: false, meta: false }
+         useSettingsStore
+            .getState()
+            .addKeybinding({
+               action: "query.execute",
+               key: "r",
+               ctrl: true,
+               shift: false,
+               alt: false,
+               meta: false,
+            })
+         const newBinding = {
+            action: "env.create",
+            key: "n",
+            ctrl: true,
+            shift: false,
+            alt: false,
+            meta: false,
+         }
          const result = useSettingsStore.getState().updateKeybinding(0, newBinding)
          expect(result.isOk()).toBe(true)
          expect(useSettingsStore.getState().keybindings[0].action).toBe("env.create")
       })
 
       it("updateKeybinding should return error for invalid index", () => {
-         const result = useSettingsStore.getState().updateKeybinding(99, { action: "query.execute", key: "x", ctrl: false, shift: false, alt: false, meta: false })
+         const result = useSettingsStore
+            .getState()
+            .updateKeybinding(99, {
+               action: "query.execute",
+               key: "x",
+               ctrl: false,
+               shift: false,
+               alt: false,
+               meta: false,
+            })
          expect(result.isErr()).toBe(true)
       })
 
       it("removeKeybinding should remove a keybinding at index", () => {
-         useSettingsStore.getState().addKeybinding({ action: "query.execute", key: "r", ctrl: true, shift: false, alt: false, meta: false })
-         useSettingsStore.getState().addKeybinding({ action: "env.create", key: "n", ctrl: true, shift: false, alt: false, meta: false })
+         useSettingsStore
+            .getState()
+            .addKeybinding({
+               action: "query.execute",
+               key: "r",
+               ctrl: true,
+               shift: false,
+               alt: false,
+               meta: false,
+            })
+         useSettingsStore
+            .getState()
+            .addKeybinding({
+               action: "env.create",
+               key: "n",
+               ctrl: true,
+               shift: false,
+               alt: false,
+               meta: false,
+            })
          const result = useSettingsStore.getState().removeKeybinding(0)
          expect(result.isOk()).toBe(true)
          expect(useSettingsStore.getState().keybindings).toHaveLength(1)
@@ -81,7 +131,16 @@ describe("settingsStore", () => {
       })
 
       it("resetKeybindings should reset to defaults", () => {
-         useSettingsStore.getState().addKeybinding({ action: "query.execute", key: "r", ctrl: true, shift: false, alt: false, meta: false })
+         useSettingsStore
+            .getState()
+            .addKeybinding({
+               action: "query.execute",
+               key: "r",
+               ctrl: true,
+               shift: false,
+               alt: false,
+               meta: false,
+            })
          const result = useSettingsStore.getState().resetKeybindings()
          expect(result.isOk()).toBe(true)
       })

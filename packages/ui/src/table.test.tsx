@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest"
 import { render, screen } from "@testing-library/react"
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from "./table"
+import {
+   Table,
+   TableHeader,
+   TableBody,
+   TableRow,
+   TableHead,
+   TableCell,
+   TableCaption,
+} from "./table"
 
 describe("Table", () => {
    it("renders table with headers and cells", () => {

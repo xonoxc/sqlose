@@ -3,19 +3,28 @@ import { executeQueryForDB } from "./index"
 
 vi.mock("./postgres", () => ({
    executePostgresQuery: vi.fn(() =>
-      Promise.resolve({ isOk: () => true, value: { columns: ["id"], rows: [{ id: 1 }], rowCount: 1, executionTimeMs: 5 } })
+      Promise.resolve({
+         isOk: () => true,
+         value: { columns: ["id"], rows: [{ id: 1 }], rowCount: 1, executionTimeMs: 5 },
+      })
    ),
 }))
 
 vi.mock("./mysql", () => ({
    executeMySQLQuery: vi.fn(() =>
-      Promise.resolve({ isOk: () => true, value: { columns: ["id"], rows: [{ id: 1 }], rowCount: 1, executionTimeMs: 5 } })
+      Promise.resolve({
+         isOk: () => true,
+         value: { columns: ["id"], rows: [{ id: 1 }], rowCount: 1, executionTimeMs: 5 },
+      })
    ),
 }))
 
 vi.mock("./sqlite", () => ({
    executeSQLiteQuery: vi.fn(() =>
-      Promise.resolve({ isOk: () => true, value: { columns: ["id"], rows: [{ id: 1 }], rowCount: 1, executionTimeMs: 5 } })
+      Promise.resolve({
+         isOk: () => true,
+         value: { columns: ["id"], rows: [{ id: 1 }], rowCount: 1, executionTimeMs: 5 },
+      })
    ),
 }))
 

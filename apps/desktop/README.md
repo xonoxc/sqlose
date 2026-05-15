@@ -36,25 +36,25 @@ bun run test -- --coverage
 
 ### Test Structure
 
-| Test Type | Location | Tool |
-|-----------|----------|------|
-| Unit/logic | `src/**/*.test.ts` | Vitest |
-| Component | `src/components/*.test.tsx` | React Testing Library |
-| Integration | `src/lib/workflows.integration.test.tsx` | Vitest + mocked IPC |
-| IPC handlers | `electron/ipc-handlers.test.ts` | Vitest |
-| E2E | `e2e/app.spec.ts` | Playwright |
+| Test Type    | Location                                 | Tool                  |
+| ------------ | ---------------------------------------- | --------------------- |
+| Unit/logic   | `src/**/*.test.ts`                       | Vitest                |
+| Component    | `src/components/*.test.tsx`              | React Testing Library |
+| Integration  | `src/lib/workflows.integration.test.tsx` | Vitest + mocked IPC   |
+| IPC handlers | `electron/ipc-handlers.test.ts`          | Vitest                |
+| E2E          | `e2e/app.spec.ts`                        | Playwright            |
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Cmd/Ctrl + Enter` | Execute query |
-| `Cmd/Ctrl + K` | Open command palette |
-| `Cmd/Ctrl + T` | New tab |
-| `Cmd/Ctrl + W` | Close tab |
-| `Cmd/Ctrl + Tab` | Next tab |
-| `Cmd/Ctrl + Shift + Tab` | Previous tab |
-| `Escape` | Close palette/settings |
+| Shortcut                 | Action                 |
+| ------------------------ | ---------------------- |
+| `Cmd/Ctrl + Enter`       | Execute query          |
+| `Cmd/Ctrl + K`           | Open command palette   |
+| `Cmd/Ctrl + T`           | New tab                |
+| `Cmd/Ctrl + W`           | Close tab              |
+| `Cmd/Ctrl + Tab`         | Next tab               |
+| `Cmd/Ctrl + Shift + Tab` | Previous tab           |
+| `Escape`                 | Close palette/settings |
 
 ## Vim Mode
 

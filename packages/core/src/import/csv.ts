@@ -17,7 +17,10 @@ export function parseCSV(content: string): AsyncAppResult<CSVParsed> {
       return Promise.resolve(err(new ImportError("import:parse_failed", "CSV has no content")))
    }
 
-   const lines = content.trim().split("\n").filter((l) => l.trim().length > 0)
+   const lines = content
+      .trim()
+      .split("\n")
+      .filter(l => l.trim().length > 0)
 
    if (lines.length < 1) {
       return Promise.resolve(err(new ImportError("import:parse_failed", "CSV has no content")))
@@ -37,9 +40,9 @@ export function parseCSV(content: string): AsyncAppResult<CSVParsed> {
             err(
                new ImportError(
                   "import:parse_failed",
-                  `Row ${i + 1} has ${values.length} values but expected ${columns.length}`,
-               ),
-            ),
+                  `Row ${i + 1} has ${values.length} values but expected ${columns.length}`
+               )
+            )
          )
       }
       const row: Record<string, string> = {}
@@ -78,11 +81,15 @@ function parseCSVLine(line: string): string[] {
    return result
 }
 
-export function inferSchema(columns: string[], rows: Record<string, string>[], tableName: string): InferredSchema {
+export function inferSchema(
+   columns: string[],
+   rows: Record<string, string>[],
+   tableName: string
+): InferredSchema {
    const schema: InferredSchema = { tableName, columns: [] }
 
    for (const col of columns) {
-      const values = rows.map((r) => r[col]).filter((v) => v !== "")
+      const values = rows.map(r => r[col]).filter(v => v !== "")
       const colType = inferColumnType(values)
       schema.columns.push({ name: col, type: colType })
    }
@@ -93,30 +100,34 @@ export function inferSchema(columns: string[], rows: Record<string, string>[], t
 function inferColumnType(values: string[]): string {
    if (values.length === 0) return "TEXT"
 
-   const ints = values.every((v) => /^-?\d+$/.test(v.trim()))
+   const ints = values.every(v => /^-?\d+$/.test(v.trim()))
    if (ints) return "INTEGER"
 
-   const floats = values.every((v) => /^-?\d+\.?\d*$/.test(v.trim()))
+   const floats = values.every(v => /^-?\d+\.?\d*$/.test(v.trim()))
    if (floats) return "REAL"
 
-   const dates = values.every((v) => !isNaN(Date.parse(v)))
+   const dates = values.every(v => !isNaN(Date.parse(v)))
    if (dates) return "TIMESTAMP"
 
    return "TEXT"
 }
 
 export function generateCreateTableSQL(schema: InferredSchema): string {
-   const colDefs = schema.columns.map((c) => `"${c.name}" ${c.type}`).join(",\n   ")
+   const colDefs = schema.columns.map(c => `"${c.name}" ${c.type}`).join(",\n   ")
    return `CREATE TABLE IF NOT EXISTS "${schema.tableName}" (\n   ${colDefs}\n);`
 }
 
-export function generateInsertSQL(tableName: string, columns: string[], rows: Record<string, string>[]): string[] {
-   return rows.map((row) => {
-      const values = columns.map((col) => {
+export function generateInsertSQL(
+   tableName: string,
+   columns: string[],
+   rows: Record<string, string>[]
+): string[] {
+   return rows.map(row => {
+      const values = columns.map(col => {
          const val = row[col] ?? ""
          return escapeSQLValue(val)
       })
-      return `INSERT INTO "${tableName}" (${columns.map((c) => `"${c}"`).join(", ")}) VALUES (${values.join(", ")});`
+      return `INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(", ")}) VALUES (${values.join(", ")});`
    })
 }
 
@@ -128,7 +139,7 @@ function escapeSQLValue(value: string): string {
 }
 
 export function importCSV(content: string, tableName: string): AsyncAppResult<ImportResult> {
-   return parseCSV(content).then((parseResult) => {
+   return parseCSV(content).then(parseResult => {
       if (parseResult.isErr()) return err(parseResult.error)
 
       const { columns, rows } = parseResult.value
@@ -142,9 +153,9 @@ export function importCSV(content: string, tableName: string): AsyncAppResult<Im
 }
 
 export function previewCSV(
-   content: string,
+   content: string
 ): AsyncAppResult<{ columns: string[]; preview: Record<string, string>[] }> {
-   return parseCSV(content).then((parseResult) => {
+   return parseCSV(content).then(parseResult => {
       if (parseResult.isErr()) return err(parseResult.error)
 
       const { columns, rows } = parseResult.value

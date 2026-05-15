@@ -1,4 +1,3 @@
-import { useState, useEffect, useRef } from "react"
 import {
    IconDatabase,
    IconServer,
@@ -10,21 +9,16 @@ import {
    IconDatabaseImport,
 } from "@tabler/icons-react"
 import { Button, Input, Badge } from "@sqlose/ui"
-import { api } from "../lib/api"
-import { useEnvironmentStore } from "../stores/environmentStore"
-import { useWorkspaceStore } from "../stores/workspaceStore"
-import type { DBType, Dataset } from "@sqlose/shared"
+import type { DBType } from "@sqlose/shared"
+import { useCreateDatabaseFlowLogic } from "../hooks/useCreateDatabaseFlowLogic"
 
-type FlowStep = "select-type" | "configure" | "provisioning"
-
-interface ProvisioningStep {
-   id: string
+const DB_CARDS: {
+   type: DBType
    label: string
-   status: "pending" | "in-progress" | "done" | "error"
-   message?: string
-}
-
-const DB_CARDS: { type: DBType; label: string; description: string; icon: typeof IconDatabase | typeof IconServer; accent: string }[] = [
+   description: string
+   icon: typeof IconDatabase | typeof IconServer
+   accent: string
+}[] = [
    {
       type: "postgres",
       label: "PostgreSQL",
@@ -56,128 +50,25 @@ const CATEGORY_COLORS: Record<string, "default" | "secondary" | "warning" | "suc
 }
 
 export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
-   const [step, setStep] = useState<FlowStep>("select-type")
-   const [selectedDbType, setSelectedDbType] = useState<DBType | null>(null)
-   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null)
-   const [dbName, setDbName] = useState("")
-   const [provisioningSteps, setProvisioningSteps] = useState<ProvisioningStep[]>([])
-   const [provisioningError, setProvisioningError] = useState<string | null>(null)
-   const [datasets, setDatasets] = useState<Dataset[]>([])
-   const [datasetsLoading, setDatasetsLoading] = useState(false)
-   const [creating, setCreating] = useState(false)
-   const provisionStarted = useRef(false)
-
-   const createEnvironment = useEnvironmentStore((s) => s.createEnvironment)
-   const selectEnvironment = useEnvironmentStore((s) => s.selectEnvironment)
-   const resetWorkspace = useWorkspaceStore((s) => s.resetWorkspace)
-
-   useEffect(() => {
-      if (step === "configure") {
-         setDatasetsLoading(true)
-         api.dataset.list().then((result) => {
-            if (result.isOk()) {
-               setDatasets(result.value)
-            }
-            setDatasetsLoading(false)
-         })
-      }
-   }, [step])
-
-   const updateStepStatus = (stepId: string, status: ProvisioningStep["status"], message?: string) => {
-      setProvisioningSteps((prev) => prev.map((s) => (s.id === stepId ? {
-			...s, status, message 
-		} : s)))
-   }
-
-   const runProvision = async () => {
-      const steps: ProvisioningStep[] = []
-      steps.push({ id: "create", label: "Creating environment", status: "pending" })
-      if (selectedDbType === "sqlite") {
-         steps.push({ id: "init", label: "Initializing database", status: "pending" })
-      } else {
-         steps.push({ id: "pull", label: "Pulling database container", status: "pending" })
-         steps.push({ id: "start", label: "Starting database server", status: "pending" })
-      }
-      if (selectedDataset) {
-         steps.push({ id: "seed", label: `Importing ${selectedDataset.name} dataset`, status: "pending" })
-      }
-      steps.push({ id: "connect", label: "Connecting client", status: "pending" })
-      setProvisioningSteps(steps)
-
-      updateStepStatus("create", "in-progress")
-      const envResult = await createEnvironment(
-         selectedDbType!,
-         dbName || `${DB_CARDS.find((c) => c.type === selectedDbType)?.label ?? selectedDbType} Database`,
-      )
-      if (envResult.isErr()) {
-         updateStepStatus("create", "error", envResult.error.message)
-         setProvisioningError(envResult.error.message)
-         return
-      }
-      const env = envResult.value
-      updateStepStatus("create", "done")
-
-      if (selectedDbType === "sqlite") {
-         updateStepStatus("init", "done")
-      } else {
-         updateStepStatus("pull", "in-progress")
-          const pullResult = await api.docker.pullImage(selectedDbType!)
-         if (pullResult.isErr()) {
-            updateStepStatus("pull", "error", pullResult.error.message)
-            setProvisioningError(pullResult.error.message)
-            return
-         }
-         updateStepStatus("pull", "done")
-
-         updateStepStatus("start", "in-progress")
-         const containerResult = await api.docker.createContainer(env.id)
-         if (containerResult.isErr()) {
-            updateStepStatus("start", "error", containerResult.error.message)
-            setProvisioningError(containerResult.error.message)
-            return
-         }
-         updateStepStatus("start", "done")
-      }
-
-      if (selectedDataset) {
-         updateStepStatus("seed", "in-progress")
-         const importResult = await api.dataset.import(selectedDataset.id, env.id)
-         if (importResult.isErr()) {
-            updateStepStatus("seed", "error", importResult.error.message)
-            setProvisioningError(importResult.error.message)
-            return
-         }
-         updateStepStatus("seed", "done")
-      }
-
-      updateStepStatus("connect", "in-progress")
-      await new Promise((r) => setTimeout(r, 300))
-      resetWorkspace()
-      selectEnvironment(env.id)
-      updateStepStatus("connect", "done")
-   }
-
-   useEffect(() => {
-      if (step === "provisioning" && !provisionStarted.current) {
-         provisionStarted.current = true
-         runProvision()
-      }
-   }, [step])
-
-   const handleSelectType = (type: DBType) => {
-      setSelectedDbType(type)
-      setDbName(`${DB_CARDS.find((c) => c.type === type)?.label} Database`)
-      setStep("configure")
-   }
-
-   const handleCreate = () => {
-      setCreating(true)
-      setStep("provisioning")
-   }
+   const {
+      step,
+      selectedDbType,
+      selectedDataset,
+      setSelectedDataset,
+      dbName,
+      setDbName,
+      provisioningSteps,
+      provisioningError,
+      datasets,
+      datasetsLoading,
+      creating,
+      allDone,
+      handleSelectType,
+      handleCreate,
+      setStep,
+   } = useCreateDatabaseFlowLogic(onClose)
 
    if (step === "provisioning") {
-      const allDone = provisioningSteps.length > 0 && provisioningSteps.every((s) => s.status === "done")
-
       return (
          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
             <div className="bg-[#0c0c0c] border border-white/10 rounded-2xl p-10 max-w-md w-full mx-4 shadow-2xl">
@@ -196,7 +87,11 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
 
                   <div className="text-center">
                      <h2 className="text-xl font-bold text-text-primary">
-                        {provisioningError ? "Setup Failed" : allDone ? "Environment Ready" : "Setting Up Environment"}
+                        {provisioningError
+                           ? "Setup Failed"
+                           : allDone
+                             ? "Environment Ready"
+                             : "Setting Up Environment"}
                      </h2>
                      <p className="text-sm text-text-muted mt-1">
                         {provisioningError
@@ -208,7 +103,7 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
                   </div>
 
                   <div className="w-full space-y-2">
-                     {provisioningSteps.map((ps) => (
+                     {provisioningSteps.map(ps => (
                         <div
                            key={ps.id}
                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-all ${
@@ -242,7 +137,9 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
                               {ps.label}
                            </span>
                            {ps.message && (
-                              <span className="text-xs text-text-muted ml-auto truncate max-w-[160px]">{ps.message}</span>
+                              <span className="text-xs text-text-muted ml-auto truncate max-w-[160px]">
+                                 {ps.message}
+                              </span>
                            )}
                         </div>
                      ))}
@@ -266,16 +163,23 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e1e] shrink-0">
                <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                     <span className={`text-xs font-mono transition-colors ${step === "select-type" ? "text-accent" : "text-success"}`}>
+                     <span
+                        className={`text-xs font-mono transition-colors ${step === "select-type" ? "text-accent" : "text-success"}`}
+                     >
                         1. Select Type
                      </span>
                      <IconArrowRight className="h-3 w-3 text-text-muted" />
-                     <span className={`text-xs font-mono transition-colors ${step === "configure" ? "text-accent" : "text-text-muted"}`}>
+                     <span
+                        className={`text-xs font-mono transition-colors ${step === "configure" ? "text-accent" : "text-text-muted"}`}
+                     >
                         2. Configure
                      </span>
                   </div>
                </div>
-               <button onClick={onClose} className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-[#1a1a1a] transition-colors">
+               <button
+                  onClick={onClose}
+                  className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-[#1a1a1a] transition-colors"
+               >
                   <IconX className="h-4 w-4" />
                </button>
             </div>
@@ -285,22 +189,32 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
                {step === "select-type" && (
                   <div className="space-y-5">
                      <div>
-                        <h2 className="text-lg font-bold text-text-primary">Choose Database Type</h2>
-                        <p className="text-sm text-text-muted mt-1">Select the type of database you want to create</p>
+                        <h2 className="text-lg font-bold text-text-primary">
+                           Choose Database Type
+                        </h2>
+                        <p className="text-sm text-text-muted mt-1">
+                           Select the type of database you want to create
+                        </p>
                      </div>
                      <div className="grid gap-3">
-                        {DB_CARDS.map((card) => (
+                        {DB_CARDS.map(card => (
                            <button
                               key={card.type}
                               onClick={() => handleSelectType(card.type)}
                               className="flex items-start gap-4 bg-[#111] border border-[#222] hover:border-accent/50 hover:bg-[#161616] rounded-xl p-4 text-left transition-all cursor-pointer group"
                            >
-                              <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${card.accent} border border-white/5 flex items-center justify-center shrink-0`}>
+                              <div
+                                 className={`h-12 w-12 rounded-xl bg-gradient-to-br ${card.accent} border border-white/5 flex items-center justify-center shrink-0`}
+                              >
                                  <card.icon className="h-6 w-6 text-text-primary" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                 <h3 className="text-base font-semibold text-text-primary group-hover:text-accent transition-colors">{card.label}</h3>
-                                 <p className="text-sm text-text-muted mt-0.5">{card.description}</p>
+                                 <h3 className="text-base font-semibold text-text-primary group-hover:text-accent transition-colors">
+                                    {card.label}
+                                 </h3>
+                                 <p className="text-sm text-text-muted mt-0.5">
+                                    {card.description}
+                                 </p>
                               </div>
                               <div className="h-8 w-8 rounded-full bg-[#1a1a1a] border border-[#333] flex items-center justify-center shrink-0 group-hover:border-accent/50 group-hover:bg-accent/10 transition-all">
                                  <IconArrowRight className="h-4 w-4 text-text-muted group-hover:text-accent transition-colors" />
@@ -315,19 +229,23 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
                   <div className="space-y-6">
                      <div>
                         <h2 className="text-lg font-bold text-text-primary">Name Your Database</h2>
-                        <p className="text-sm text-text-muted mt-1">Give your database a memorable name</p>
+                        <p className="text-sm text-text-muted mt-1">
+                           Give your database a memorable name
+                        </p>
                      </div>
 
                      <Input
                         value={dbName}
-                        onChange={(e) => setDbName(e.target.value)}
+                        onChange={e => setDbName(e.target.value)}
                         placeholder="Database name"
                         className="w-full"
                      />
 
                      <div>
                         <div className="flex items-center justify-between mb-3">
-                           <h3 className="text-sm font-semibold text-text-primary">Import Dataset (optional)</h3>
+                           <h3 className="text-sm font-semibold text-text-primary">
+                              Import Dataset (optional)
+                           </h3>
                            {selectedDataset && (
                               <button
                                  onClick={() => setSelectedDataset(null)}
@@ -346,16 +264,22 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
                            <div className="bg-[#111] border border-dashed border-[#333] rounded-xl p-6 text-center">
                               <IconDatabaseImport className="h-8 w-8 text-text-muted mx-auto mb-2" />
                               <p className="text-sm text-text-muted">No datasets available</p>
-                              <p className="text-xs text-text-muted mt-1">You can start with an empty database</p>
+                              <p className="text-xs text-text-muted mt-1">
+                                 You can start with an empty database
+                              </p>
                            </div>
                         ) : (
                            <div className="grid gap-2 max-h-[280px] overflow-y-auto custom-scrollbar pr-1">
                               {datasets
-                                 .filter((ds) => ds.dbTypes.includes(selectedDbType!))
-                                 .map((ds) => (
+                                 .filter(ds => ds.dbTypes.includes(selectedDbType!))
+                                 .map(ds => (
                                     <button
                                        key={ds.id}
-                                       onClick={() => setSelectedDataset(selectedDataset?.id === ds.id ? null : ds)}
+                                       onClick={() =>
+                                          setSelectedDataset(
+                                             selectedDataset?.id === ds.id ? null : ds
+                                          )
+                                       }
                                        className={`flex items-center gap-3 rounded-xl p-3.5 text-left transition-all cursor-pointer border ${
                                           selectedDataset?.id === ds.id
                                              ? "border-accent/50 bg-accent/5"
@@ -364,24 +288,34 @@ export function CreateDatabaseFlow({ onClose }: { onClose: () => void }) {
                                     >
                                        <div
                                           className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${
-                                             selectedDataset?.id === ds.id ? "bg-accent/20 text-accent" : "bg-[#1a1a1a] text-text-muted"
+                                             selectedDataset?.id === ds.id
+                                                ? "bg-accent/20 text-accent"
+                                                : "bg-[#1a1a1a] text-text-muted"
                                           }`}
                                        >
                                           <IconDatabaseImport className="h-5 w-5" />
                                        </div>
                                        <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2">
-                                             <span className="text-sm font-medium text-text-primary">{ds.name}</span>
+                                             <span className="text-sm font-medium text-text-primary">
+                                                {ds.name}
+                                             </span>
                                              <Badge
-                                                variant={CATEGORY_COLORS[ds.category] ?? "secondary"}
+                                                variant={
+                                                   CATEGORY_COLORS[ds.category] ?? "secondary"
+                                                }
                                                 className="text-[10px] px-1.5 py-0"
                                              >
                                                 {ds.category}
                                              </Badge>
                                           </div>
-                                          <p className="text-xs text-text-muted mt-0.5 truncate">{ds.description}</p>
+                                          <p className="text-xs text-text-muted mt-0.5 truncate">
+                                             {ds.description}
+                                          </p>
                                        </div>
-                                       {selectedDataset?.id === ds.id && <IconCheck className="h-5 w-5 text-accent shrink-0" />}
+                                       {selectedDataset?.id === ds.id && (
+                                          <IconCheck className="h-5 w-5 text-accent shrink-0" />
+                                       )}
                                     </button>
                                  ))}
                            </div>

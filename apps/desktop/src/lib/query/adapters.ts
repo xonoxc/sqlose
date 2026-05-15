@@ -32,4 +32,3 @@ export class QueryError extends Error {
       return new QueryError(new AppError("ipc:invalid_payload", String(error)))
    }
 }
-

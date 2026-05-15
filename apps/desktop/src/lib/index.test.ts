@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest"
-import {
-   createTab,
-   createDefaultPaneSizes,
-   createDefaultKeybindings,
-} from "../lib/types"
+import { createTab, createDefaultPaneSizes, createDefaultKeybindings } from "../lib/types"
 import { unwrapResult, unwrapAsyncResult, QueryError } from "../lib/query/adapters"
 import { ok, err } from "neverthrow"
 import { AppError } from "@sqlose/shared"
@@ -59,8 +55,6 @@ describe("types utilities", () => {
          expect(paletteBinding).toBeDefined()
       })
    })
-
-
 })
 
 describe("query adapters", () => {

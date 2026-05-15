@@ -16,7 +16,10 @@ async function setupMockApi(page: Page) {
 
       const mockQueryResult = {
          columns: ["id", "name", "email"],
-         rows: [{ id: 1, name: "Alice", email: "alice@test.com" }, { id: 2, name: "Bob", email: "bob@test.com" }],
+         rows: [
+            { id: 1, name: "Alice", email: "alice@test.com" },
+            { id: 2, name: "Bob", email: "bob@test.com" },
+         ],
          rowCount: 2,
          executionTimeMs: 15,
       }
@@ -25,7 +28,12 @@ async function setupMockApi(page: Page) {
 
       window.sqlose = {
          docker: {
-            startEnv: async () => ok({ environmentId: "env-1", port: 5432, connectionString: "postgresql://localhost:5432/sqlose" }),
+            startEnv: async () =>
+               ok({
+                  environmentId: "env-1",
+                  port: 5432,
+                  connectionString: "postgresql://localhost:5432/sqlose",
+               }),
             stopEnv: async () => ok({ environmentId: "env-1" }),
             restartEnv: async () => ok({ environmentId: "env-1" }),
             health: async () => ok({ healthy: true, uptime: 120 }),
@@ -45,10 +53,20 @@ async function setupMockApi(page: Page) {
          import: {
             csv: async () => ok({ tableName: "users", rowCount: 10, columns: ["id", "name"] }),
             sql: async () => ok({ tablesCreated: ["users", "orders"] }),
-            previewCSV: async () => ok({ columns: ["id", "name"], preview: [{ id: "1", name: "Alice" }] }),
+            previewCSV: async () =>
+               ok({ columns: ["id", "name"], preview: [{ id: "1", name: "Alice" }] }),
          },
          dataset: {
-            list: async () => ok([{ id: "ds-1", name: "Ecommerce Sample", description: "Sample ecommerce dataset", category: "ecommerce", dbTypes: ["postgres", "mysql"] }]),
+            list: async () =>
+               ok([
+                  {
+                     id: "ds-1",
+                     name: "Ecommerce Sample",
+                     description: "Sample ecommerce dataset",
+                     category: "ecommerce",
+                     dbTypes: ["postgres", "mysql"],
+                  },
+               ]),
             import: async () => ok({ tablesCreated: ["products", "orders"] }),
          },
       }
@@ -138,7 +156,18 @@ test.describe("Critical E2E Flows", () => {
          const workspaceData = {
             state: {
                tabs: [
-                  { id: "persisted-tab-1", type: "query", title: "Persisted Query", environmentId: "env-1", isDirty: false, isExecuting: false, query: "SELECT 1", result: null, error: null, createdAt: "2025-01-01T00:00:00Z" },
+                  {
+                     id: "persisted-tab-1",
+                     type: "query",
+                     title: "Persisted Query",
+                     environmentId: "env-1",
+                     isDirty: false,
+                     isExecuting: false,
+                     query: "SELECT 1",
+                     result: null,
+                     error: null,
+                     createdAt: "2025-01-01T00:00:00Z",
+                  },
                ],
                activeTabId: "persisted-tab-1",
                paneSizes: { sidebarWidth: 300, editorHeight: 250, resultsHeight: 350 },
@@ -148,7 +177,21 @@ test.describe("Critical E2E Flows", () => {
          window.localStorage.setItem("sqlose-workspace", JSON.stringify(workspaceData))
 
          const settingsData = {
-            state: { vimModeEnabled: true, keybindings: [{ action: "query.execute", key: "r", ctrl: true, shift: false, alt: false, meta: false }], theme: "dark", autoSave: true },
+            state: {
+               vimModeEnabled: true,
+               keybindings: [
+                  {
+                     action: "query.execute",
+                     key: "r",
+                     ctrl: true,
+                     shift: false,
+                     alt: false,
+                     meta: false,
+                  },
+               ],
+               theme: "dark",
+               autoSave: true,
+            },
             version: 0,
          }
          window.localStorage.setItem("sqlose-settings", JSON.stringify(settingsData))

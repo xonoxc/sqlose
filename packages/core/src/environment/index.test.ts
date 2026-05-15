@@ -33,7 +33,7 @@ describe("Environment Lifecycle", () => {
             expect(result.value.name).toBe("My PG")
             expect(result.value.status).toBe("creating")
             expect(result.value.id).toContain("env-")
-            expect((store.saveEnvironment as Mock)).toHaveBeenCalledOnce()
+            expect(store.saveEnvironment as Mock).toHaveBeenCalledOnce()
          }
       })
 
@@ -47,7 +47,7 @@ describe("Environment Lifecycle", () => {
       })
 
       it("should return error when save fails", async () => {
-         (store.saveEnvironment as Mock).mockImplementationOnce(() => {
+         ;(store.saveEnvironment as Mock).mockImplementationOnce(() => {
             throw new Error("Save failed")
          })
 
@@ -124,7 +124,7 @@ describe("Environment Lifecycle", () => {
             expect(result.value.name).toBe("New Name")
             expect(result.value.status).toBe("running")
          }
-         expect((store.saveEnvironment as Mock)).toHaveBeenCalledOnce()
+         expect(store.saveEnvironment as Mock).toHaveBeenCalledOnce()
       })
 
       it("should return error when not found", async () => {
@@ -146,7 +146,7 @@ describe("Environment Lifecycle", () => {
          const result = await destroyEnvironmentRecord("env-1")
 
          expect(result.isOk()).toBe(true)
-         expect((store.deleteEnvironment as Mock)).toHaveBeenCalledWith("env-1")
+         expect(store.deleteEnvironment as Mock).toHaveBeenCalledWith("env-1")
       })
 
       it("should return error when not found", async () => {
@@ -174,7 +174,7 @@ describe("Environment Lifecycle", () => {
             expect(result.value.status).toBe("creating")
             expect(result.value.id).not.toBe("env-1")
          }
-         expect((store.saveEnvironment as Mock)).toHaveBeenCalledOnce()
+         expect(store.saveEnvironment as Mock).toHaveBeenCalledOnce()
       })
 
       it("should return error when not found", async () => {
@@ -210,7 +210,7 @@ describe("Environment Lifecycle", () => {
             expect(result.value.containerId).toBeNull()
             expect(result.value.name).toBe("Test")
          }
-         expect((store.saveEnvironment as Mock)).toHaveBeenCalledOnce()
+         expect(store.saveEnvironment as Mock).toHaveBeenCalledOnce()
       })
 
       it("should return error when not found", async () => {

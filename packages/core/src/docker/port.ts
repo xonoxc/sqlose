@@ -4,10 +4,17 @@ import { DockerError } from "@sqlose/shared"
 import type { AsyncAppResult } from "@sqlose/shared"
 
 export function findAvailablePort(min = 4000, max = 6000): AsyncAppResult<number> {
-   return new Promise((resolve) => {
+   return new Promise(resolve => {
       function tryPort(port: number): void {
          if (port > max) {
-            resolve(err(new DockerError("docker:port_conflict", `No available ports in range ${min}-${max}`)))
+            resolve(
+               err(
+                  new DockerError(
+                     "docker:port_conflict",
+                     `No available ports in range ${min}-${max}`
+                  )
+               )
+            )
             return
          }
          const server = createServer()

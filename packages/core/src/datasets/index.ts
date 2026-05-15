@@ -158,6 +158,9 @@ export function listDatasets(): AsyncAppResult<Dataset[]> {
 
 export function getDatasetSQL(datasetId: string): AsyncAppResult<string> {
    const sql = SAMPLE_DATASETS[datasetId]
-   if (!sql) return Promise.resolve(err(new ImportError("import:parse_failed", `Dataset ${datasetId} not found`)))
+   if (!sql)
+      return Promise.resolve(
+         err(new ImportError("import:parse_failed", `Dataset ${datasetId} not found`))
+      )
    return Promise.resolve(ok(sql))
 }

@@ -5,7 +5,7 @@ import type { QueryResult, AsyncAppResult } from "@sqlose/shared"
 
 function openDatabase(dbPath: string): Promise<sqlite3.Database> {
    return new Promise((resolve, reject) => {
-      const db = new sqlite3.Database(dbPath, (error) => {
+      const db = new sqlite3.Database(dbPath, error => {
          if (error) reject(error)
          else resolve(db)
       })
@@ -14,7 +14,7 @@ function openDatabase(dbPath: string): Promise<sqlite3.Database> {
 
 function runQuery(
    db: sqlite3.Database,
-   sql: string,
+   sql: string
 ): Promise<{ columns: string[]; rows: Record<string, unknown>[] }> {
    return new Promise((resolve, reject) => {
       db.all(sql, (error, rows) => {
@@ -29,7 +29,7 @@ function runQuery(
 
 function closeDatabase(db: sqlite3.Database): Promise<void> {
    return new Promise((resolve, reject) => {
-      db.close((err) => {
+      db.close(err => {
          if (err) reject(err)
          else resolve()
       })
@@ -38,7 +38,7 @@ function closeDatabase(db: sqlite3.Database): Promise<void> {
 
 export function executeSQLiteQuery(dbPath: string, sql: string): AsyncAppResult<QueryResult> {
    return openDatabase(dbPath)
-      .then((db) => {
+      .then(db => {
          const start = performance.now()
          return runQuery(db, sql).then(({ columns, rows }) => {
             const executionTimeMs = Math.round(performance.now() - start)
@@ -48,7 +48,7 @@ export function executeSQLiteQuery(dbPath: string, sql: string): AsyncAppResult<
                   rows,
                   rowCount: rows.length,
                   executionTimeMs,
-               }),
+               })
             )
          })
       })

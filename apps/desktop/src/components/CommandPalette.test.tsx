@@ -24,7 +24,9 @@ describe("CommandPalette", () => {
 
    it("does not render when closed", () => {
       renderWithQuery(<CommandPalette isOpen={false} onClose={() => {}} />)
-      expect(screen.queryByPlaceholderText("Search tables, queries, commands...")).not.toBeInTheDocument()
+      expect(
+         screen.queryByPlaceholderText("Search tables, queries, commands...")
+      ).not.toBeInTheDocument()
    })
 
    it("renders when open", () => {

@@ -90,6 +90,6 @@ export const useSettingsStore = create<SettingsStore>()(
       }),
       {
          name: "sqlose-settings",
-      },
-   ),
+      }
+   )
 )

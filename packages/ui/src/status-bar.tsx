@@ -16,12 +16,7 @@ const dbTypeLabels: Record<DBType, string> = {
    sqlite: "SQLite",
 }
 
-export function StatusBar({
-   vimMode,
-   dbType,
-   leftItems,
-   className,
-}: StatusBarProps) {
+export function StatusBar({ vimMode, dbType, leftItems, className }: StatusBarProps) {
    return (
       <div
          className={cn(
@@ -29,9 +24,7 @@ export function StatusBar({
             className
          )}
       >
-         <div className="flex items-center gap-3 h-full">
-            {leftItems}
-         </div>
+         <div className="flex items-center gap-3 h-full">{leftItems}</div>
          <div className="flex items-center h-full">
             {vimMode && (
                <div className="flex items-center h-full border-l border-border/50 px-3">

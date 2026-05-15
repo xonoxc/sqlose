@@ -9,11 +9,23 @@ const DESKTOP_DIR = __dirname
 const CORE_NM = path.resolve(DESKTOP_DIR, "../../packages/core/node_modules")
 const dest = path.resolve(DESKTOP_DIR, "node_modules")
 if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true })
-for (const dep of ["pg", "mysql2", "sqlite3", "dockerode", "electron-store", "bindings", "node-gyp-build"]) {
+for (const dep of [
+   "pg",
+   "mysql2",
+   "sqlite3",
+   "dockerode",
+   "electron-store",
+   "bindings",
+   "node-gyp-build",
+]) {
    const src = path.resolve(CORE_NM, dep)
    const dst = path.resolve(dest, dep)
    if (fs.existsSync(src) && !fs.existsSync(dst)) {
-      try { fs.symlinkSync(src, dst, "dir") } catch { /* ok */ }
+      try {
+         fs.symlinkSync(src, dst, "dir")
+      } catch {
+         /* ok */
+      }
    }
 }
 
@@ -70,10 +82,7 @@ export default defineConfig({
                },
             },
          },
-         renderer:
-            process.env.NODE_ENV === "test"
-               ? undefined
-               : {},
+         renderer: process.env.NODE_ENV === "test" ? undefined : {},
       }),
    ],
    resolve: {

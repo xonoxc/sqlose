@@ -5,7 +5,12 @@ import { app, BrowserWindow } from "electron"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-import { initDocker, stopOrphanedContainers, reconcileEnvironmentStatuses, stopAllContainers } from "@sqlose/core"
+import {
+   initDocker,
+   stopOrphanedContainers,
+   reconcileEnvironmentStatuses,
+   stopAllContainers,
+} from "@sqlose/core"
 import { registerAllHandlers } from "./ipc-handlers"
 
 process.env.APP_ROOT = path.join(__dirname, "..")

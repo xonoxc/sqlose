@@ -15,13 +15,15 @@ interface EnvironmentStore {
    fetchEnvironments: () => Promise<Result<Environment[], AppError>>
    createEnvironment: (dbType: DBType, name?: string) => Promise<Result<Environment, AppError>>
    destroyEnvironment: (environmentId: string) => Promise<Result<string, AppError>>
-   startEnvironment: (environmentId: string) => Promise<Result<{ port: number; connectionString: string }, AppError>>
+   startEnvironment: (
+      environmentId: string
+   ) => Promise<Result<{ port: number; connectionString: string }, AppError>>
    stopEnvironment: (environmentId: string) => Promise<Result<string, AppError>>
    restartEnvironment: (environmentId: string) => Promise<Result<string, AppError>>
    duplicateEnvironment: (environmentId: string) => Promise<Result<Environment, AppError>>
-    resetEnvironment: (environmentId: string) => Promise<Result<Environment, AppError>>
-    nukeEnvironment: (environmentId: string) => Promise<Result<Environment, AppError>>
-    selectEnvironment: (environmentId: string | null) => Result<string | null, AppError>
+   resetEnvironment: (environmentId: string) => Promise<Result<Environment, AppError>>
+   nukeEnvironment: (environmentId: string) => Promise<Result<Environment, AppError>>
+   selectEnvironment: (environmentId: string | null) => Result<string | null, AppError>
    getEnvironment: (environmentId: string) => Environment | undefined
 }
 
@@ -70,9 +72,11 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             if (result.isOk()) {
                const current = get()
                set({
-                  environments: current.environments.filter((e) => e.id !== environmentId),
+                  environments: current.environments.filter(e => e.id !== environmentId),
                   selectedEnvironmentId:
-                     current.selectedEnvironmentId === environmentId ? null : current.selectedEnvironmentId,
+                     current.selectedEnvironmentId === environmentId
+                        ? null
+                        : current.selectedEnvironmentId,
                   isLoading: false,
                })
                return ok(environmentId)
@@ -94,8 +98,10 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             if (env.dbType === "sqlite") {
                const updateResult = await api.env.get(environmentId)
                if (updateResult.isOk()) {
-                  const environments = get().environments.map((e) =>
-                     e.id === environmentId ? { ...updateResult.value, status: "running" as const } : e,
+                  const environments = get().environments.map(e =>
+                     e.id === environmentId
+                        ? { ...updateResult.value, status: "running" as const }
+                        : e
                   )
                   set({
                      environments,
@@ -110,8 +116,8 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             if (result.isOk()) {
                const updateResult = await api.env.get(environmentId)
                if (updateResult.isOk()) {
-                  const environments = get().environments.map((e) =>
-                     e.id === environmentId ? updateResult.value : e,
+                  const environments = get().environments.map(e =>
+                     e.id === environmentId ? updateResult.value : e
                   )
                   set({ environments, isLoading: false })
                } else {
@@ -131,8 +137,8 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             if (result.isOk()) {
                const updateResult = await api.env.get(environmentId)
                if (updateResult.isOk()) {
-                  const environments = get().environments.map((e) =>
-                     e.id === environmentId ? updateResult.value : e,
+                  const environments = get().environments.map(e =>
+                     e.id === environmentId ? updateResult.value : e
                   )
                   set({ environments, isLoading: false })
                } else {
@@ -152,8 +158,8 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             if (result.isOk()) {
                const updateResult = await api.env.get(environmentId)
                if (updateResult.isOk()) {
-                  const environments = get().environments.map((e) =>
-                     e.id === environmentId ? updateResult.value : e,
+                  const environments = get().environments.map(e =>
+                     e.id === environmentId ? updateResult.value : e
                   )
                   set({ environments, isLoading: false })
                } else {
@@ -188,8 +194,8 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             const result = await api.env.reset(environmentId)
 
             if (result.isOk()) {
-               const environments = get().environments.map((e) =>
-                  e.id === environmentId ? result.value : e,
+               const environments = get().environments.map(e =>
+                  e.id === environmentId ? result.value : e
                )
                set({ environments, isLoading: false })
             } else {
@@ -204,8 +210,8 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
             const result = await api.env.nuke(environmentId)
 
             if (result.isOk()) {
-               const environments = get().environments.map((e) =>
-                  e.id === environmentId ? result.value : e,
+               const environments = get().environments.map(e =>
+                  e.id === environmentId ? result.value : e
                )
                set({ environments, isLoading: false })
             } else {
@@ -217,9 +223,11 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
 
          selectEnvironment: (environmentId: string | null) => {
             if (environmentId !== null) {
-               const exists = get().environments.some((e) => e.id === environmentId)
+               const exists = get().environments.some(e => e.id === environmentId)
                if (!exists) {
-                  return err(new AppError("env:not_found", `Environment ${environmentId} not found`))
+                  return err(
+                     new AppError("env:not_found", `Environment ${environmentId} not found`)
+                  )
                }
             }
             set({ selectedEnvironmentId: environmentId })
@@ -227,15 +235,15 @@ export const useEnvironmentStore = create<EnvironmentStore>()(
          },
 
          getEnvironment: (environmentId: string) => {
-            return get().environments.find((e) => e.id === environmentId)
+            return get().environments.find(e => e.id === environmentId)
          },
       }),
       {
          name: "sqlose-environments",
-         partialize: (state) => ({
+         partialize: state => ({
             environments: state.environments,
             selectedEnvironmentId: state.selectedEnvironmentId,
          }),
-      },
-   ),
+      }
+   )
 )

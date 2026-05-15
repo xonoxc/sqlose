@@ -23,9 +23,11 @@ beforeEach(() => {
    mockDb.all.mockReset()
    mockDb.close.mockReset()
    dbOpenError = null
-   mockDb.all.mockImplementation((_sql: string, cb: (err: Error | null, rows: unknown[]) => void) => {
-      queueMicrotask(() => cb(null, [{ id: 1, name: "test" }]))
-   })
+   mockDb.all.mockImplementation(
+      (_sql: string, cb: (err: Error | null, rows: unknown[]) => void) => {
+         queueMicrotask(() => cb(null, [{ id: 1, name: "test" }]))
+      }
+   )
    mockDb.close.mockImplementation((cb: (err: Error | null) => void) => {
       queueMicrotask(() => cb(null))
    })
@@ -42,9 +44,11 @@ describe("executeSQLiteQuery", () => {
    })
 
    it("should return syntax error for invalid SQL", async () => {
-      mockDb.all.mockImplementation((_sql: string, cb: (err: Error | null, _rows: unknown[]) => void) => {
-         queueMicrotask(() => cb(new Error("near \"INVALID\": syntax error"), []))
-      })
+      mockDb.all.mockImplementation(
+         (_sql: string, cb: (err: Error | null, _rows: unknown[]) => void) => {
+            queueMicrotask(() => cb(new Error('near "INVALID": syntax error'), []))
+         }
+      )
       const result = await executeSQLiteQuery("/tmp/test.db", "SELECT INVALID")
       expect(result.isErr()).toBe(true)
       if (result.isErr()) {
@@ -53,9 +57,11 @@ describe("executeSQLiteQuery", () => {
    })
 
    it("should return execution error for query failures", async () => {
-      mockDb.all.mockImplementation((_sql: string, cb: (err: Error | null, _rows: unknown[]) => void) => {
-         queueMicrotask(() => cb(new Error("no such table: users"), []))
-      })
+      mockDb.all.mockImplementation(
+         (_sql: string, cb: (err: Error | null, _rows: unknown[]) => void) => {
+            queueMicrotask(() => cb(new Error("no such table: users"), []))
+         }
+      )
       const result = await executeSQLiteQuery("/tmp/test.db", "SELECT * FROM nonexistent")
       expect(result.isErr()).toBe(true)
       if (result.isErr()) {
@@ -64,9 +70,11 @@ describe("executeSQLiteQuery", () => {
    })
 
    it("should handle empty results", async () => {
-      mockDb.all.mockImplementation((_sql: string, cb: (err: Error | null, rows: unknown[]) => void) => {
-         queueMicrotask(() => cb(null, []))
-      })
+      mockDb.all.mockImplementation(
+         (_sql: string, cb: (err: Error | null, rows: unknown[]) => void) => {
+            queueMicrotask(() => cb(null, []))
+         }
+      )
       const result = await executeSQLiteQuery("/tmp/test.db", "SELECT * FROM empty")
       expect(result.isOk()).toBe(true)
       if (result.isOk()) {

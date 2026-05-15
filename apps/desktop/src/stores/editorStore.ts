@@ -17,7 +17,13 @@ interface EditorStore {
    setSelectedEnvironment: (environmentId: string | null) => Result<string | null, AppError>
 }
 
-const VIM_MODES_SET: ReadonlySet<string> = new Set(["normal", "insert", "visual", "visual-line", "visual-block"])
+const VIM_MODES_SET: ReadonlySet<string> = new Set([
+   "normal",
+   "insert",
+   "visual",
+   "visual-line",
+   "visual-block",
+])
 
 function isValidVimMode(mode: unknown): mode is VimMode {
    return typeof mode === "string" && VIM_MODES_SET.has(mode)
@@ -63,12 +69,12 @@ export const useEditorStore = create<EditorStore>()(
       }),
       {
          name: "sqlose-editor",
-         partialize: (state) => ({
+         partialize: state => ({
             vimMode: state.vimMode,
             vimEnabled: state.vimEnabled,
             queryDraft: state.queryDraft,
             selectedEnvironmentId: state.selectedEnvironmentId,
          }),
-      },
-   ),
+      }
+   )
 )

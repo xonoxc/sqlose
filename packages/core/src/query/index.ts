@@ -8,12 +8,12 @@ export function executeQuery(environmentId: string, sql: string): AsyncAppResult
    const env = loadEnvironment(environmentId)
    if (!env) {
       return Promise.resolve(
-         err(new QueryError("query:connection_failed", `Environment ${environmentId} not found`)),
+         err(new QueryError("query:connection_failed", `Environment ${environmentId} not found`))
       )
    }
    if (env.status !== "running") {
       return Promise.resolve(
-         err(new QueryError("query:connection_failed", "Environment is not running")),
+         err(new QueryError("query:connection_failed", "Environment is not running"))
       )
    }
 
@@ -24,7 +24,7 @@ export function buildQueryHistory(
    environmentId: string,
    sql: string,
    result: QueryResult | null,
-   error: string | null,
+   error: string | null
 ) {
    return {
       id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

@@ -47,32 +47,51 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 
 interface MockApi {
    env: {
-      create: Mock;
-      list: Mock;
-      destroy: Mock;
-      get: Mock;
-      duplicate: Mock;
-   };
+      create: Mock
+      list: Mock
+      destroy: Mock
+      get: Mock
+      duplicate: Mock
+   }
    query: {
-      execute: Mock;
-   };
+      execute: Mock
+   }
    docker: {
-      startEnv: Mock;
-      stopEnv: Mock;
-      health: Mock;
-   };
+      startEnv: Mock
+      stopEnv: Mock
+      health: Mock
+   }
 }
 
 function getMockApi() {
-    return (window as unknown as { sqlose: MockApi }).sqlose
+   return (window as unknown as { sqlose: MockApi }).sqlose
 }
 
 beforeEach(() => {
    queryClient.clear()
-   useEnvironmentStore.setState({ environments: [], selectedEnvironmentId: null, isLoading: false, error: null })
-   useWorkspaceStore.setState({ tabs: [], activeTabId: null, paneSizes: { sidebarWidth: 280, editorHeight: 300, resultsHeight: 300 } })
-   useEditorStore.setState({ vimMode: "normal", vimEnabled: false, queryDraft: "", selectedEnvironmentId: null })
-   useSettingsStore.setState({ vimModeEnabled: false, keybindings: [], theme: "dark", autoSave: true })
+   useEnvironmentStore.setState({
+      environments: [],
+      selectedEnvironmentId: null,
+      isLoading: false,
+      error: null,
+   })
+   useWorkspaceStore.setState({
+      tabs: [],
+      activeTabId: null,
+      paneSizes: { sidebarWidth: 280, editorHeight: 300, resultsHeight: 300 },
+   })
+   useEditorStore.setState({
+      vimMode: "normal",
+      vimEnabled: false,
+      queryDraft: "",
+      selectedEnvironmentId: null,
+   })
+   useSettingsStore.setState({
+      vimModeEnabled: false,
+      keybindings: [],
+      theme: "dark",
+      autoSave: true,
+   })
 })
 
 afterEach(() => {
@@ -96,7 +115,10 @@ describe("Workflow: Environment CRUD", () => {
 
    it("1b. fetches environments list via store", async () => {
       const api = getMockApi()
-      const envs = [makeEnv({ id: "env-1" }), makeEnv({ id: "env-2", name: "env2", dbType: "mysql" })]
+      const envs = [
+         makeEnv({ id: "env-1" }),
+         makeEnv({ id: "env-2", name: "env2", dbType: "mysql" }),
+      ]
       api.env.list.mockResolvedValue({ success: true, data: envs })
 
       await act(async () => {
@@ -164,11 +186,17 @@ describe("Workflow: Query Execution", () => {
       }
    })
 
-    it("2b. renders executing state in ResultsPanel", () => {
+   it("2b. renders executing state in ResultsPanel", () => {
       render(
          <Wrapper>
-            <ResultsPanel result={null} error={null} isExecuting={true} executionTimeMs={null} rowCount={null} />
-         </Wrapper>,
+            <ResultsPanel
+               result={null}
+               error={null}
+               isExecuting={true}
+               executionTimeMs={null}
+               rowCount={null}
+            />
+         </Wrapper>
       )
       expect(screen.getByText("Executing query...")).toBeInTheDocument()
    })
@@ -183,8 +211,14 @@ describe("Workflow: Query Execution", () => {
 
       render(
          <Wrapper>
-            <ResultsPanel result={result} error={null} isExecuting={false} executionTimeMs={10} rowCount={1} />
-         </Wrapper>,
+            <ResultsPanel
+               result={result}
+               error={null}
+               isExecuting={false}
+               executionTimeMs={10}
+               rowCount={1}
+            />
+         </Wrapper>
       )
       expect(screen.getByText("Results")).toBeInTheDocument()
       expect(screen.getByText("Messages")).toBeInTheDocument()
@@ -194,8 +228,14 @@ describe("Workflow: Query Execution", () => {
    it("2d. shows empty state when no result", () => {
       render(
          <Wrapper>
-            <ResultsPanel result={null} error={null} isExecuting={false} executionTimeMs={null} rowCount={null} />
-         </Wrapper>,
+            <ResultsPanel
+               result={null}
+               error={null}
+               isExecuting={false}
+               executionTimeMs={null}
+               rowCount={null}
+            />
+         </Wrapper>
       )
       expect(screen.getByText("Ready to run query")).toBeInTheDocument()
    })
@@ -217,11 +257,17 @@ describe("Workflow: Error Propagation", () => {
       }
    })
 
-    it("3b. renders error state in ResultsPanel", () => {
+   it("3b. renders error state in ResultsPanel", () => {
       render(
          <Wrapper>
-            <ResultsPanel result={null} error={"syntax error at line 1"} isExecuting={false} executionTimeMs={null} rowCount={null} />
-         </Wrapper>,
+            <ResultsPanel
+               result={null}
+               error={"syntax error at line 1"}
+               isExecuting={false}
+               executionTimeMs={null}
+               rowCount={null}
+            />
+         </Wrapper>
       )
       expect(screen.getByText("Query Execution Failed")).toBeInTheDocument()
       expect(screen.getByText("syntax error at line 1")).toBeInTheDocument()
@@ -309,7 +355,7 @@ describe("Workflow: Vim Mode Toggle", () => {
       render(
          <Wrapper>
             <SettingsPanel isOpen={true} onClose={vi.fn()} />
-         </Wrapper>,
+         </Wrapper>
       )
       expect(screen.getByText("Vim Mode")).toBeInTheDocument()
       expect(screen.getByText("Enable Vim keybindings in the SQL editor")).toBeInTheDocument()
@@ -327,8 +373,30 @@ describe("Workflow: Tab Management", () => {
    it("5b. switches active tab", () => {
       useWorkspaceStore.setState({
          tabs: [
-            { id: "tab-1", type: "query", title: "Q1", environmentId: null, isDirty: false, isExecuting: false, query: "", result: null, error: null, createdAt: "" },
-            { id: "tab-2", type: "query", title: "Q2", environmentId: null, isDirty: false, isExecuting: false, query: "", result: null, error: null, createdAt: "" },
+            {
+               id: "tab-1",
+               type: "query",
+               title: "Q1",
+               environmentId: null,
+               isDirty: false,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "",
+            },
+            {
+               id: "tab-2",
+               type: "query",
+               title: "Q2",
+               environmentId: null,
+               isDirty: false,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "",
+            },
          ],
          activeTabId: "tab-1",
       })
@@ -340,8 +408,30 @@ describe("Workflow: Tab Management", () => {
    it("5c. closes tab and activates next", () => {
       useWorkspaceStore.setState({
          tabs: [
-            { id: "tab-1", type: "query", title: "Q1", environmentId: null, isDirty: false, isExecuting: false, query: "", result: null, error: null, createdAt: "" },
-            { id: "tab-2", type: "query", title: "Q2", environmentId: null, isDirty: false, isExecuting: false, query: "", result: null, error: null, createdAt: "" },
+            {
+               id: "tab-1",
+               type: "query",
+               title: "Q1",
+               environmentId: null,
+               isDirty: false,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "",
+            },
+            {
+               id: "tab-2",
+               type: "query",
+               title: "Q2",
+               environmentId: null,
+               isDirty: false,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "",
+            },
          ],
          activeTabId: "tab-1",
       })
@@ -356,8 +446,30 @@ describe("Workflow: Tab Management", () => {
    it("5d. renders tabs in TabBar", () => {
       useWorkspaceStore.setState({
          tabs: [
-            { id: "tab-1", type: "query", title: "Query Alpha", environmentId: null, isDirty: false, isExecuting: false, query: "", result: null, error: null, createdAt: "2024-01-01T00:00:00Z" },
-            { id: "tab-2", type: "query", title: "Query Beta", environmentId: null, isDirty: true, isExecuting: false, query: "", result: null, error: null, createdAt: "2024-01-01T00:00:00Z" },
+            {
+               id: "tab-1",
+               type: "query",
+               title: "Query Alpha",
+               environmentId: null,
+               isDirty: false,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "2024-01-01T00:00:00Z",
+            },
+            {
+               id: "tab-2",
+               type: "query",
+               title: "Query Beta",
+               environmentId: null,
+               isDirty: true,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "2024-01-01T00:00:00Z",
+            },
          ],
          activeTabId: "tab-1",
       })
@@ -371,7 +483,18 @@ describe("Workflow: Tab Management", () => {
       const user = userEvent.setup()
       useWorkspaceStore.setState({
          tabs: [
-            { id: "tab-1", type: "query", title: "Q1", environmentId: null, isDirty: false, isExecuting: false, query: "", result: null, error: null, createdAt: "2024-01-01T00:00:00Z" },
+            {
+               id: "tab-1",
+               type: "query",
+               title: "Q1",
+               environmentId: null,
+               isDirty: false,
+               isExecuting: false,
+               query: "",
+               result: null,
+               error: null,
+               createdAt: "2024-01-01T00:00:00Z",
+            },
          ],
          activeTabId: "tab-1",
       })
@@ -385,7 +508,9 @@ describe("Workflow: Tab Management", () => {
 describe("Workflow: Settings Persistence", () => {
    beforeEach(() => {
       useSettingsStore.setState({
-         keybindings: [{ action: "tab.new", key: "t", ctrl: false, shift: false, alt: false, meta: true }],
+         keybindings: [
+            { action: "tab.new", key: "t", ctrl: false, shift: false, alt: false, meta: true },
+         ],
       })
    })
 
@@ -397,7 +522,14 @@ describe("Workflow: Settings Persistence", () => {
    })
 
    it("6b. updates keybindings", () => {
-      const binding = { action: "query.execute", key: "r", ctrl: true, shift: false, alt: false, meta: false }
+      const binding = {
+         action: "query.execute",
+         key: "r",
+         ctrl: true,
+         shift: false,
+         alt: false,
+         meta: false,
+      }
       act(() => {
          useSettingsStore.getState().updateKeybinding(0, binding)
       })
@@ -416,14 +548,21 @@ describe("Workflow: Settings Persistence", () => {
       useSettingsStore.setState({
          vimModeEnabled: false,
          keybindings: [
-            { action: "query.execute", key: "Enter", ctrl: false, shift: false, alt: false, meta: true },
+            {
+               action: "query.execute",
+               key: "Enter",
+               ctrl: false,
+               shift: false,
+               alt: false,
+               meta: true,
+            },
          ],
       })
 
       render(
          <Wrapper>
             <SettingsPanel isOpen={true} onClose={vi.fn()} />
-         </Wrapper>,
+         </Wrapper>
       )
       expect(screen.getByText("Keybindings")).toBeInTheDocument()
       expect(screen.getByText("Execute Query")).toBeInTheDocument()
@@ -437,7 +576,10 @@ describe("Workflow: Environment Actions Lifecycle", () => {
          success: true,
          data: { environmentId: "env-1", port: 5432, connectionString: "postgresql://..." },
       })
-      api.env.get.mockResolvedValue({ success: true, data: makeEnv({ status: "running", uptime: 300 }) })
+      api.env.get.mockResolvedValue({
+         success: true,
+         data: makeEnv({ status: "running", uptime: 300 }),
+      })
 
       useEnvironmentStore.setState({ environments: [makeEnv({ status: "stopped" })] })
 
@@ -452,7 +594,10 @@ describe("Workflow: Environment Actions Lifecycle", () => {
    it("7b. stops environment via store", async () => {
       const api = getMockApi()
       api.docker.stopEnv.mockResolvedValue({ success: true, data: { environmentId: "env-1" } })
-      api.env.get.mockResolvedValue({ success: true, data: makeEnv({ status: "stopped", uptime: null }) })
+      api.env.get.mockResolvedValue({
+         success: true,
+         data: makeEnv({ status: "stopped", uptime: null }),
+      })
 
       useEnvironmentStore.setState({ environments: [makeEnv()] })
 

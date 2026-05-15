@@ -15,7 +15,7 @@ interface HistoryStore {
       duration: number,
       rowCount: number,
       status: "success" | "error",
-      error: string | null,
+      error: string | null
    ) => Result<HistoryEntry, AppError>
    clearHistory: () => Result<void, AppError>
    removeEntry: (id: string) => Result<void, AppError>
@@ -28,8 +28,16 @@ export const useHistoryStore = create<HistoryStore>()(
          entries: [],
 
          addEntry: (sql, environmentId, dbType, duration, rowCount, status, error) => {
-            const entry = createHistoryEntry(sql, environmentId, dbType, duration, rowCount, status, error)
-            set((state) => ({
+            const entry = createHistoryEntry(
+               sql,
+               environmentId,
+               dbType,
+               duration,
+               rowCount,
+               status,
+               error
+            )
+            set(state => ({
                entries: [entry, ...state.entries].slice(0, 200),
             }))
             return ok(entry)
@@ -41,8 +49,8 @@ export const useHistoryStore = create<HistoryStore>()(
          },
 
          removeEntry: (id: string) => {
-            set((state) => ({
-               entries: state.entries.filter((e) => e.id !== id),
+            set(state => ({
+               entries: state.entries.filter(e => e.id !== id),
             }))
             return ok(undefined)
          },
@@ -53,9 +61,9 @@ export const useHistoryStore = create<HistoryStore>()(
       }),
       {
          name: "sqlose-history",
-         partialize: (state) => ({
+         partialize: state => ({
             entries: state.entries,
          }),
-      },
-   ),
+      }
+   )
 )

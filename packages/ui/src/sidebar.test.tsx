@@ -4,10 +4,14 @@ import userEvent from "@testing-library/user-event"
 import { Sidebar } from "./sidebar"
 
 const items = [
-   { id: "envs", label: "Environments", children: [
-      { id: "env-1", label: "Postgres Dev" },
-      { id: "env-2", label: "MySQL Staging" },
-   ]},
+   {
+      id: "envs",
+      label: "Environments",
+      children: [
+         { id: "env-1", label: "Postgres Dev" },
+         { id: "env-2", label: "MySQL Staging" },
+      ],
+   },
    { id: "datasets", label: "Datasets", badge: "4", badgeVariant: "secondary" as const },
 ]
 
@@ -43,7 +47,14 @@ describe("Sidebar", () => {
    it("calls onSelect when item is clicked", async () => {
       const user = userEvent.setup()
       let selected = ""
-      render(<Sidebar items={items} onSelect={(id) => { selected = id }} />)
+      render(
+         <Sidebar
+            items={items}
+            onSelect={id => {
+               selected = id
+            }}
+         />
+      )
 
       await user.click(screen.getByText("Datasets"))
       expect(selected).toBe("datasets")

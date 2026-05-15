@@ -5,7 +5,11 @@ import { Button } from "./button"
 
 describe("Button", () => {
    it("renders children", () => {
-      render(<Button variant="default" size="default">Click me</Button>)
+      render(
+         <Button variant="default" size="default">
+            Click me
+         </Button>
+      )
       expect(screen.getByRole("button", { name: /click me/i })).toBeInTheDocument()
    })
 
@@ -47,7 +51,15 @@ describe("Button", () => {
    it("handles click events", async () => {
       const user = userEvent.setup()
       let clicked = false
-      render(<Button onClick={() => { clicked = true }}>Click</Button>)
+      render(
+         <Button
+            onClick={() => {
+               clicked = true
+            }}
+         >
+            Click
+         </Button>
+      )
       await user.click(screen.getByRole("button"))
       expect(clicked).toBe(true)
    })
@@ -58,7 +70,11 @@ describe("Button", () => {
    })
 
    it("renders with icon size", () => {
-      render(<Button size="icon"><span>X</span></Button>)
+      render(
+         <Button size="icon">
+            <span>X</span>
+         </Button>
+      )
       const btn = screen.getByRole("button")
       expect(btn.className).toContain("w-9")
    })

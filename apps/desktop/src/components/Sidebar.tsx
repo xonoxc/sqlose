@@ -1,18 +1,23 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { cn, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@sqlose/ui"
 import {
-   IconChevronRight, IconDatabase, IconTable, IconRefresh, IconKey, IconSearch,
-   IconHistory, IconBookmark, IconCode, IconFileCode,
-   IconLayoutSidebarLeftCollapse, IconSettings, IconClock, IconStar,
+   IconChevronRight,
+   IconDatabase,
+   IconTable,
+   IconRefresh,
+   IconKey,
+   IconSearch,
+   IconHistory,
+   IconBookmark,
+   IconCode,
+   IconFileCode,
+   IconLayoutSidebarLeftCollapse,
+   IconSettings,
+   IconClock,
+   IconStar,
    IconCircleDot,
 } from "@tabler/icons-react"
-import type { Environment, DBType } from "@sqlose/shared"
-import { useEnvironmentStore } from "../stores/environmentStore"
-import { useEditorStore } from "../stores/editorStore"
-import { useWorkspaceStore } from "../stores/workspaceStore"
-import { useHistoryStore } from "../stores/historyStore"
-import { useSavedQueriesStore } from "../stores/savedQueriesStore"
-import { useDatabaseStore } from "../stores/databaseStore"
+import { useSidebarState } from "../hooks/useSidebarState"
+import type { Environment } from "@sqlose/shared"
 
 interface AppSidebarProps {
    onSettingsOpen: () => void
@@ -22,154 +27,44 @@ interface AppSidebarProps {
    onToggleCollapse: () => void
 }
 
-type NavTab = "playground" | "saved" | "history" | null
-
-export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed, onToggleCollapse }: AppSidebarProps) {
-   const environments = useEnvironmentStore((s) => s.environments)
-   const selectedEnvironmentId = useEnvironmentStore((s) => s.selectedEnvironmentId)
-   const selectEnvironment = useEnvironmentStore((s) => s.selectEnvironment)
-   const setSelectedEnvironment = useEditorStore((s) => s.setSelectedEnvironment)
-   const openTab = useWorkspaceStore((s) => s.openTab)
-   const historyEntries = useHistoryStore((s) => s.entries)
-   const savedQueries = useSavedQueriesStore((s) => s.queries)
-
-   const savedQueryNamesBySql = useMemo(() => {
-      const map = new Map<string, string>()
-      for (const q of savedQueries) {
-         const key = q.sql.trim()
-         if (!map.has(key)) map.set(key, q.name)
-      }
-      return map
-   }, [savedQueries])
-
-   const tables = useDatabaseStore((s) => s.tables)
-   const tableColumns = useDatabaseStore((s) => s.tableColumns)
-   const schemaLoading = useDatabaseStore((s) => s.schemaLoading)
-   const schemaError = useDatabaseStore((s) => s.schemaError)
-   const loadingColumnIds = useDatabaseStore((s) => s.loadingColumnIds)
-   const expandedTableIds = useDatabaseStore((s) => s.expandedTableIds)
-   const activeTableId = useDatabaseStore((s) => s.activeTableId)
-   const keyboardFocusedIndex = useDatabaseStore((s) => s.keyboardFocusedIndex)
-   const fetchTables = useDatabaseStore((s) => s.fetchTables)
-   const fetchColumns = useDatabaseStore((s) => s.fetchColumns)
-   const setExpanded = useDatabaseStore((s) => s.setExpanded)
-   const setActiveTable = useDatabaseStore((s) => s.setActiveTable)
-   const setKeyboardFocusedIndex = useDatabaseStore((s) => s.setKeyboardFocusedIndex)
-    const reset = useDatabaseStore((s) => s.reset)
-
-   const [search, setSearch] = useState("")
-   const [activeNav, setActiveNav] = useState<NavTab>(null)
-   const [tableTreeExpanded, setTableTreeExpanded] = useState(true)
-
-   const tableListRef = useRef<HTMLDivElement>(null)
-
-   const selectedEnv = selectedEnvironmentId
-      ? environments.find((e: Environment) => e.id === selectedEnvironmentId) ?? null
-      : null
-
-   useEffect(() => {
-      if (!selectedEnvironmentId || !selectedEnv) {
-         reset()
-         return
-      }
-      fetchTables(selectedEnvironmentId, selectedEnv.dbType as DBType)
-   }, [selectedEnvironmentId, selectedEnv, fetchTables, reset])
-
-   const filteredTables = useMemo(() => {
-      if (!search) return tables
-      const q = search.toLowerCase()
-      return tables.filter(t => t.toLowerCase().includes(q))
-   }, [tables, search])
-
-   const handleSelect = useCallback(
-      (id: string) => {
-         selectEnvironment(id)
-         setSelectedEnvironment(id)
-      },
-      [selectEnvironment, setSelectedEnvironment],
-   )
-
-   const handleTableClick = useCallback((tableName: string) => {
-      setActiveTable(tableName)
-      onOpenTable(tableName)
-   }, [setActiveTable, onOpenTable])
-
-   const handleChevronClick = useCallback((e: React.MouseEvent, tableName: string) => {
-      e.stopPropagation()
-      e.preventDefault()
-      if (!selectedEnvironmentId || !selectedEnv) return
-      setExpanded(tableName)
-      if (!tableColumns[tableName]) {
-         fetchColumns(selectedEnvironmentId, tableName, selectedEnv.dbType as DBType)
-      }
-   }, [selectedEnvironmentId, selectedEnv, setExpanded, tableColumns, fetchColumns])
-
-   const handleRefresh = useCallback(async () => {
-      if (!selectedEnvironmentId || !selectedEnv) return
-      reset()
-      fetchTables(selectedEnvironmentId, selectedEnv.dbType as DBType)
-   }, [selectedEnvironmentId, selectedEnv, reset, fetchTables])
-
-   const handleNavClick = useCallback((tab: NavTab) => {
-      setActiveNav(prev => prev === tab ? null : tab)
-   }, [])
-
-   const filteredIndex = useMemo(() => {
-      const target = activeTableId ? filteredTables.indexOf(activeTableId) : -1
-      return target
-   }, [activeTableId, filteredTables])
-
-   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-      if (filteredTables.length === 0) return
-
-      let currentIndex = keyboardFocusedIndex >= 0 ? keyboardFocusedIndex : (filteredIndex >= 0 ? filteredIndex : 0)
-
-      switch (e.key) {
-         case "ArrowDown":
-            e.preventDefault()
-            currentIndex = Math.min(currentIndex + 1, filteredTables.length - 1)
-            setKeyboardFocusedIndex(currentIndex)
-            break
-         case "ArrowUp":
-            e.preventDefault()
-            currentIndex = Math.max(currentIndex - 1, 0)
-            setKeyboardFocusedIndex(currentIndex)
-            break
-         case "Enter": {
-            e.preventDefault()
-            const table = filteredTables[currentIndex]
-            if (table) {
-               handleTableClick(table)
-            }
-            break
-         }
-         case "ArrowRight": {
-            e.preventDefault()
-            const table = filteredTables[currentIndex]
-            if (table && selectedEnvironmentId && selectedEnv) {
-               if (!expandedTableIds.includes(table)) {
-                  setExpanded(table)
-                  if (!tableColumns[table]) {
-                     fetchColumns(selectedEnvironmentId, table, selectedEnv.dbType as DBType)
-                  }
-               }
-            }
-            break
-         }
-         case "ArrowLeft": {
-            e.preventDefault()
-            const table = filteredTables[currentIndex]
-            if (table && expandedTableIds.includes(table)) {
-               setExpanded(table)
-            }
-            break
-         }
-      }
-   }, [filteredTables, keyboardFocusedIndex, filteredIndex, setKeyboardFocusedIndex, handleTableClick, selectedEnvironmentId, selectedEnv, expandedTableIds, setExpanded, tableColumns, fetchColumns])
-
-   const handleTableDoubleClick = useCallback((tableName: string) => {
-      onOpenTable(tableName)
-   }, [onOpenTable])
+export function AppSidebar({
+   onSettingsOpen,
+   onOpenTable,
+   onOpenQuery,
+   collapsed,
+   onToggleCollapse,
+}: AppSidebarProps) {
+   const {
+      environments,
+      selectedEnvironmentId,
+      savedQueries,
+      savedQueryNamesBySql,
+      historyEntries,
+      tables,
+      tableColumns,
+      schemaLoading,
+      schemaError,
+      loadingColumnIds,
+      expandedTableIds,
+      activeTableId,
+      keyboardFocusedIndex,
+      filteredTables,
+      search,
+      setSearch,
+      activeNav,
+      setActiveNav,
+      tableTreeExpanded,
+      setTableTreeExpanded,
+      tableListRef,
+      handleSelect,
+      handleTableClick,
+      handleChevronClick,
+      handleRefresh,
+      handleNavClick,
+      handleKeyDown,
+      handleTableDoubleClick,
+      openTab,
+   } = useSidebarState(onOpenTable)
 
    if (collapsed) {
       return (
@@ -185,8 +80,11 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
 
             <button
                onClick={() => setActiveNav("playground")}
-               className={cn("h-8 w-8 rounded flex items-center justify-center transition-colors",
-                  activeNav === "playground" ? "text-accent bg-accent/10" : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
+               className={cn(
+                  "h-8 w-8 rounded flex items-center justify-center transition-colors",
+                  activeNav === "playground"
+                     ? "text-accent bg-accent/10"
+                     : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
                )}
                aria-label="Playground"
             >
@@ -194,8 +92,11 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
             </button>
             <button
                onClick={() => setActiveNav("saved")}
-               className={cn("h-8 w-8 rounded flex items-center justify-center transition-colors",
-                  activeNav === "saved" ? "text-accent bg-accent/10" : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
+               className={cn(
+                  "h-8 w-8 rounded flex items-center justify-center transition-colors",
+                  activeNav === "saved"
+                     ? "text-accent bg-accent/10"
+                     : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
                )}
                aria-label="Saved Queries"
             >
@@ -203,8 +104,11 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
             </button>
             <button
                onClick={() => setActiveNav("history")}
-               className={cn("h-8 w-8 rounded flex items-center justify-center transition-colors",
-                  activeNav === "history" ? "text-accent bg-accent/10" : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
+               className={cn(
+                  "h-8 w-8 rounded flex items-center justify-center transition-colors",
+                  activeNav === "history"
+                     ? "text-accent bg-accent/10"
+                     : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
                )}
                aria-label="History"
             >
@@ -213,8 +117,11 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
             <div className="w-6 h-px bg-border/60 my-1" />
             <button
                onClick={() => setTableTreeExpanded(!tableTreeExpanded)}
-               className={cn("h-8 w-8 rounded flex items-center justify-center transition-colors",
-                  tableTreeExpanded ? "text-accent bg-accent/10" : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
+               className={cn(
+                  "h-8 w-8 rounded flex items-center justify-center transition-colors",
+                  tableTreeExpanded
+                     ? "text-accent bg-accent/10"
+                     : "text-text-muted hover:text-text-primary hover:bg-bg-quaternary"
                )}
                aria-label="Tables"
             >
@@ -228,10 +135,7 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
       <div className="flex h-full flex-col bg-bg-secondary text-text-secondary w-full border-r border-border/50">
          {/* Header: DB Selector + Actions */}
          <div className="flex items-center justify-between w-full app-no-drag gap-1 px-3 pt-3 pb-2 shrink-0 app-drag-region">
-            <Select
-               value={selectedEnvironmentId ?? ""}
-               onValueChange={handleSelect}
-            >
+            <Select value={selectedEnvironmentId ?? ""} onValueChange={handleSelect}>
                <SelectTrigger className="w-full bg-transparent border-transparent shadow-none hover:bg-bg-quaternary/30 focus:ring-0 px-2 h-9 transition-colors truncate">
                   <div className="flex items-center gap-2 truncate">
                      <div className="h-6 w-6 rounded bg-bg-tertiary border border-border flex items-center justify-center text-accent shrink-0">
@@ -242,27 +146,41 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                </SelectTrigger>
                <SelectContent className="border-border/80 bg-bg-tertiary min-w-[200px] shadow-2xl">
                   {environments.map((env: Environment) => (
-                     <SelectItem key={env.id} value={env.id} className="text-[12px] hover:bg-bg-quaternary">
+                     <SelectItem
+                        key={env.id}
+                        value={env.id}
+                        className="text-[12px] hover:bg-bg-quaternary"
+                     >
                         {env.name || `${env.dbType} ${env.port}`}
                      </SelectItem>
                   ))}
                </SelectContent>
             </Select>
-             <div className="flex items-center shrink-0">
-                <button onClick={onSettingsOpen} className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors" aria-label="Settings">
-                   <IconSettings className="h-3.5 w-3.5" />
-                </button>
-                <button onClick={onToggleCollapse} className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors" aria-label="Collapse sidebar">
-                   <IconLayoutSidebarLeftCollapse className="h-3.5 w-3.5" />
-                </button>
-             </div>
+            <div className="flex items-center shrink-0">
+               <button
+                  onClick={onSettingsOpen}
+                  className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors"
+                  aria-label="Settings"
+               >
+                  <IconSettings className="h-3.5 w-3.5" />
+               </button>
+               <button
+                  onClick={onToggleCollapse}
+                  className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors"
+                  aria-label="Collapse sidebar"
+               >
+                  <IconLayoutSidebarLeftCollapse className="h-3.5 w-3.5" />
+               </button>
+            </div>
          </div>
 
          <div className="flex-1 flex flex-col min-h-0 custom-scrollbar overflow-y-auto">
             {/* WORKSPACE Section */}
             <div className="px-3 pt-1 pb-0.5">
                <div className="flex items-center gap-1.5 px-2 py-1.5 mb-0.5">
-                  <span className="text-[10px] font-semibold tracking-widest uppercase text-text-muted/60">Workspace</span>
+                  <span className="text-[10px] font-semibold tracking-widest uppercase text-text-muted/60">
+                     Workspace
+                  </span>
                </div>
                <div className="flex flex-col gap-0.5">
                   <NavItem
@@ -292,7 +210,10 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
             {activeNav === "playground" && (
                <div className="mx-3 mb-2 p-2 rounded-md bg-bg-tertiary/50 border border-border/40">
                   <button
-                     onClick={() => { openTab(); setActiveNav(null) }}
+                     onClick={() => {
+                        openTab()
+                        setActiveNav(null)
+                     }}
                      className="flex w-full items-center gap-2 px-2 py-1.5 rounded text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/50 transition-colors"
                   >
                      <IconFileCode className="h-3.5 w-3.5" />
@@ -309,16 +230,21 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                         <p className="text-[10px] text-text-muted/60">No saved queries yet</p>
                      </div>
                   ) : (
-                     savedQueries.map((q) => (
+                     savedQueries.map(q => (
                         <button
                            key={q.id}
-                           onClick={() => { onOpenQuery(q.sql); setActiveNav(null) }}
+                           onClick={() => {
+                              onOpenQuery(q.sql)
+                              setActiveNav(null)
+                           }}
                            className="flex w-full items-center gap-2 px-2 py-1.5 rounded text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/40 transition-colors text-left"
                         >
                            <IconStar className="h-3 w-3 text-warning shrink-0" />
                            <span className="truncate flex-1">{q.name}</span>
                            {q.tags.length > 0 && (
-                              <span className="text-[9px] text-text-muted/60 font-mono">{q.tags[0]}</span>
+                              <span className="text-[9px] text-text-muted/60 font-mono">
+                                 {q.tags[0]}
+                              </span>
                            )}
                         </button>
                      ))
@@ -334,15 +260,32 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                         <p className="text-[10px] text-text-muted/60">No query history yet</p>
                      </div>
                   ) : (
-                     historyEntries.slice(0, 15).map((entry) => (
+                     historyEntries.slice(0, 15).map(entry => (
                         <button
                            key={entry.id}
-                           onClick={() => { onOpenQuery(entry.sql); setActiveNav(null) }}
+                           onClick={() => {
+                              onOpenQuery(entry.sql)
+                              setActiveNav(null)
+                           }}
                            className="flex w-full items-center gap-2 px-2 py-1.5 rounded text-[11px] text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/40 transition-colors text-left"
                         >
-                            <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", entry.status === "success" ? "bg-success" : "bg-error")} />
-                           <span className="truncate flex-1" >{savedQueryNamesBySql.get(entry.sql.trim()) ?? <span className="font-mono text-[10px]">{entry.sql.slice(0, 40)}{entry.sql.length > 40 ? "..." : ""}</span>}</span>
-                           <span className="text-[9px] text-text-muted/60 font-mono shrink-0">{entry.duration}ms</span>
+                           <div
+                              className={cn(
+                                 "h-1.5 w-1.5 rounded-full shrink-0",
+                                 entry.status === "success" ? "bg-success" : "bg-error"
+                              )}
+                           />
+                           <span className="truncate flex-1">
+                              {savedQueryNamesBySql.get(entry.sql.trim()) ?? (
+                                 <span className="font-mono text-[10px]">
+                                    {entry.sql.slice(0, 40)}
+                                    {entry.sql.length > 40 ? "..." : ""}
+                                 </span>
+                              )}
+                           </span>
+                           <span className="text-[9px] text-text-muted/60 font-mono shrink-0">
+                              {entry.duration}ms
+                           </span>
                         </button>
                      ))
                   )}
@@ -356,8 +299,15 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                      onClick={() => setTableTreeExpanded(!tableTreeExpanded)}
                      className="flex items-center gap-1.5"
                   >
-                     <IconChevronRight className={cn("h-3 w-3 text-text-muted transition-transform", tableTreeExpanded && "rotate-90")} />
-                     <span className="text-[10px] font-semibold tracking-widest uppercase text-text-muted/60">Tables</span>
+                     <IconChevronRight
+                        className={cn(
+                           "h-3 w-3 text-text-muted transition-transform",
+                           tableTreeExpanded && "rotate-90"
+                        )}
+                     />
+                     <span className="text-[10px] font-semibold tracking-widest uppercase text-text-muted/60">
+                        Tables
+                     </span>
                   </button>
                   {tableTreeExpanded && (
                      <div className="flex items-center gap-0.5">
@@ -367,7 +317,9 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                            className="h-6 w-6 rounded flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-quaternary transition-colors disabled:opacity-40"
                            aria-label="Refresh tables"
                         >
-                           <IconRefresh className={cn("h-3 w-3", schemaLoading && "animate-spin")} />
+                           <IconRefresh
+                              className={cn("h-3 w-3", schemaLoading && "animate-spin")}
+                           />
                         </button>
                      </div>
                   )}
@@ -402,28 +354,41 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                            <div className="flex items-center justify-center py-6">
                               <div className="flex flex-col items-center gap-2">
                                  <div className="h-3 w-3 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-                                 <span className="text-[10px] text-text-muted">Loading tables...</span>
+                                 <span className="text-[10px] text-text-muted">
+                                    Loading tables...
+                                 </span>
                               </div>
                            </div>
                         )}
 
                         {schemaError && !schemaLoading && (
                            <div className="mx-1 mt-2 p-2 rounded bg-error/5 border border-error/20">
-                              <p className="text-[10px] text-error font-medium mb-1">Failed to load schema</p>
-                              <p className="text-[9px] text-text-muted leading-relaxed">{schemaError}</p>
+                              <p className="text-[10px] text-error font-medium mb-1">
+                                 Failed to load schema
+                              </p>
+                              <p className="text-[9px] text-text-muted leading-relaxed">
+                                 {schemaError}
+                              </p>
                            </div>
                         )}
 
-                        {!schemaLoading && !schemaError && tables.length === 0 && selectedEnvironmentId && (
-                           <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
-                              <IconTable className="h-6 w-6 text-text-muted/30 mb-1" />
-                              <span className="text-[11px] text-text-muted">No tables found</span>
-                           </div>
-                        )}
+                        {!schemaLoading &&
+                           !schemaError &&
+                           tables.length === 0 &&
+                           selectedEnvironmentId && (
+                              <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
+                                 <IconTable className="h-6 w-6 text-text-muted/30 mb-1" />
+                                 <span className="text-[11px] text-text-muted">
+                                    No tables found
+                                 </span>
+                              </div>
+                           )}
 
                         {!schemaLoading && filteredTables.length === 0 && tables.length > 0 && (
                            <div className="flex items-center justify-center py-6">
-                              <span className="text-[11px] text-text-muted">No matching tables</span>
+                              <span className="text-[11px] text-text-muted">
+                                 No matching tables
+                              </span>
                            </div>
                         )}
 
@@ -444,35 +409,44 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                                        isActive
                                           ? "bg-accent/10 text-accent border-l-[2.5px] border-accent"
                                           : "text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/30 border-l-[2.5px] border-transparent",
-                                       isFocused && "ring-1 ring-accent/40",
+                                       isFocused && "ring-1 ring-accent/40"
                                     )}
                                     onClick={() => handleTableClick(tableName)}
                                     onDoubleClick={() => handleTableDoubleClick(tableName)}
                                  >
                                     {/* Chevron button - separate from table selection */}
                                     <button
-                                       onClick={(e) => handleChevronClick(e, tableName)}
+                                       onClick={e => handleChevronClick(e, tableName)}
                                        className={cn(
                                           "h-4 w-4 rounded flex items-center justify-center shrink-0 transition-colors",
                                           "hover:bg-bg-quaternary/60 hover:text-text-primary",
                                           isExpanded && "text-accent"
                                        )}
-                                       aria-label={isExpanded ? "Collapse columns" : "Expand columns"}
+                                       aria-label={
+                                          isExpanded ? "Collapse columns" : "Expand columns"
+                                       }
                                        tabIndex={-1}
                                     >
                                        <IconChevronRight
                                           className={cn(
                                              "h-2.5 w-2.5 transition-transform duration-160 ease-out",
-                                             isExpanded && "rotate-90",
+                                             isExpanded && "rotate-90"
                                           )}
                                        />
                                     </button>
 
-                                    <IconTable className={cn("h-3.5 w-3.5 shrink-0 opacity-70", isActive && "opacity-100")} />
+                                    <IconTable
+                                       className={cn(
+                                          "h-3.5 w-3.5 shrink-0 opacity-70",
+                                          isActive && "opacity-100"
+                                       )}
+                                    />
                                     <span className="truncate flex-1 text-left">{tableName}</span>
 
                                     {columns && (
-                                       <span className="text-[9px] text-text-muted/50 font-mono shrink-0">{columns.length}</span>
+                                       <span className="text-[9px] text-text-muted/50 font-mono shrink-0">
+                                          {columns.length}
+                                       </span>
                                     )}
                                     {isLoadingColumns && (
                                        <div className="h-2.5 w-2.5 rounded-full border-[1.5px] border-accent border-t-transparent animate-spin shrink-0" />
@@ -485,15 +459,19 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                                        {isLoadingColumns && !columns && (
                                           <div className="flex items-center gap-2 pl-6 py-1.5">
                                              <div className="h-2 w-2 rounded-full border-[1.5px] border-accent border-t-transparent animate-spin" />
-                                             <span className="text-[9px] text-text-muted">Loading...</span>
+                                             <span className="text-[9px] text-text-muted">
+                                                Loading...
+                                             </span>
                                           </div>
                                        )}
                                        {columns && columns.length === 0 && !isLoadingColumns && (
-                                          <div className="py-1 pl-6 pr-2 text-[9px] text-text-muted italic">No columns</div>
+                                          <div className="py-1 pl-6 pr-2 text-[9px] text-text-muted italic">
+                                             No columns
+                                          </div>
                                        )}
                                        {columns && columns.length > 0 && (
                                           <div className="ml-3 border-l border-border/50 pl-2 pb-1 space-y-[1px]">
-                                             {columns.map((col) => (
+                                             {columns.map(col => (
                                                 <div
                                                    key={col.name}
                                                    className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-bg-quaternary/20 transition-colors group/col"
@@ -503,14 +481,20 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
                                                    ) : (
                                                       <IconCircleDot className="h-2 w-2 shrink-0 text-text-muted/30" />
                                                    )}
-                                                   <span className="text-[10px] font-mono text-text-primary truncate">{col.name}</span>
-                                                   <span className="text-[8px] font-mono text-text-muted/50 truncate ml-auto">{col.type}</span>
-                                                   <span className={cn(
-                                                      "text-[7px] font-mono px-1 rounded shrink-0 leading-none py-[2px]",
-                                                      col.nullable
-                                                         ? "text-text-muted/40 bg-bg-tertiary/50"
-                                                         : "text-error/50 bg-error/5",
-                                                   )}>
+                                                   <span className="text-[10px] font-mono text-text-primary truncate">
+                                                      {col.name}
+                                                   </span>
+                                                   <span className="text-[8px] font-mono text-text-muted/50 truncate ml-auto">
+                                                      {col.type}
+                                                   </span>
+                                                   <span
+                                                      className={cn(
+                                                         "text-[7px] font-mono px-1 rounded shrink-0 leading-none py-[2px]",
+                                                         col.nullable
+                                                            ? "text-text-muted/40 bg-bg-tertiary/50"
+                                                            : "text-error/50 bg-error/5"
+                                                      )}
+                                                   >
                                                       {col.nullable ? "NULL" : "NN"}
                                                    </span>
                                                 </div>
@@ -531,7 +515,13 @@ export function AppSidebar({ onSettingsOpen, onOpenTable, onOpenQuery, collapsed
    )
 }
 
-function NavItem({ icon, label, badge, active, onClick }: {
+function NavItem({
+   icon,
+   label,
+   badge,
+   active,
+   onClick,
+}: {
    icon: React.ReactNode
    label: string
    badge?: string
@@ -545,13 +535,15 @@ function NavItem({ icon, label, badge, active, onClick }: {
             "flex w-full items-center gap-2.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all outline-none focus-visible:ring-1 focus-visible:ring-accent",
             active
                ? "bg-accent/10 text-accent"
-               : "text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/40",
+               : "text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/40"
          )}
       >
          <span className={cn("shrink-0", active ? "text-accent" : "text-text-muted")}>{icon}</span>
          <span className="truncate flex-1 text-left">{label}</span>
          {badge && (
-            <span className="text-[9px] font-mono text-text-muted bg-bg-tertiary px-1.5 py-0.5 rounded">{badge}</span>
+            <span className="text-[9px] font-mono text-text-muted bg-bg-tertiary px-1.5 py-0.5 rounded">
+               {badge}
+            </span>
          )}
       </button>
    )

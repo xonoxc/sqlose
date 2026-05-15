@@ -38,7 +38,11 @@ export async function listTables(envId: string, dbType: DBType): Promise<string[
    return result.value.rows.map(r => String(r.table_name ?? "")).filter(Boolean)
 }
 
-export async function getTableColumns(envId: string, tableName: string, dbType: DBType): Promise<ColumnInfo[]> {
+export async function getTableColumns(
+   envId: string,
+   tableName: string,
+   dbType: DBType
+): Promise<ColumnInfo[]> {
    const sql = getColumnsSQL(dbType, tableName)
    const result = await api.query.execute(envId, sql)
    if (result.isErr()) throw result.error

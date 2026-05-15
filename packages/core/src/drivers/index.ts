@@ -8,7 +8,7 @@ import { executeSQLiteQuery } from "./sqlite"
 export function executeQueryForDB(
    dbType: DBType,
    connectionString: string,
-   sql: string,
+   sql: string
 ): AsyncAppResult<QueryResult> {
    switch (dbType) {
       case "postgres":
@@ -19,7 +19,7 @@ export function executeQueryForDB(
          return executeSQLiteQuery(connectionString, sql)
       default:
          return Promise.resolve(
-            err(new QueryError("query:execution_failed", `Unsupported DB type: ${dbType}`)),
+            err(new QueryError("query:execution_failed", `Unsupported DB type: ${dbType}`))
          )
    }
 }

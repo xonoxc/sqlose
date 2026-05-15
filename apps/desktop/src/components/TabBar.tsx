@@ -1,35 +1,20 @@
-import { useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { cn } from "@sqlose/ui"
 import { IconX, IconPlus, IconLoader2, IconTable } from "@tabler/icons-react"
 import type { Tab } from "../lib/types"
-import { useWorkspaceStore } from "../stores/workspaceStore"
+import { useTabBarLogic } from "../hooks/useTabBarLogic"
 
 export function TabBar() {
-   const tabs = useWorkspaceStore((s) => s.tabs)
-   const activeTabId = useWorkspaceStore((s) => s.activeTabId)
-   const openTab = useWorkspaceStore((s) => s.openTab)
-   const closeTab = useWorkspaceStore((s) => s.closeTab)
-   const setActiveTab = useWorkspaceStore((s) => s.setActiveTab)
-   const moveTab = useWorkspaceStore((s) => s.moveTab)
-   const dragItem = useRef<number | null>(null)
-   const dragOverItem = useRef<number | null>(null)
-
-   const handleDragStart = useCallback((index: number) => {
-      dragItem.current = index
-   }, [])
-
-   const handleDragOver = useCallback((index: number) => {
-      dragOverItem.current = index
-   }, [])
-
-   const handleDragEnd = useCallback(() => {
-      if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
-         moveTab(dragItem.current, dragOverItem.current)
-      }
-      dragItem.current = null
-      dragOverItem.current = null
-   }, [moveTab])
+   const {
+      tabs,
+      activeTabId,
+      handleOpenTab,
+      handleCloseTab,
+      handleSetActiveTab,
+      handleDragStart,
+      handleDragOver,
+      handleDragEnd,
+   } = useTabBarLogic()
 
    return (
       <div className="flex h-full w-full items-end bg-transparent overflow-hidden">
@@ -40,8 +25,11 @@ export function TabBar() {
                      key={tab.id}
                      tab={tab}
                      isActive={tab.id === activeTabId}
-                     onSelect={() => setActiveTab(tab.id)}
-                     onClose={(e) => { e.stopPropagation(); closeTab(tab.id) }}
+                     onSelect={() => handleSetActiveTab(tab.id)}
+                     onClose={e => {
+                        e.stopPropagation()
+                        handleCloseTab(tab.id)
+                     }}
                      onDragStart={() => handleDragStart(index)}
                      onDragOver={() => handleDragOver(index)}
                      onDragEnd={handleDragEnd}
@@ -50,7 +38,7 @@ export function TabBar() {
             </AnimatePresence>
          </div>
          <button
-            onClick={() => openTab()}
+            onClick={() => handleOpenTab()}
             className="flex items-center justify-center h-6 w-6 mx-1 mb-[3px] rounded hover:bg-bg-quaternary/80 text-text-muted hover:text-text-primary transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
             aria-label="New tab"
          >
@@ -61,7 +49,13 @@ export function TabBar() {
 }
 
 function TabItem({
-   tab, isActive, onSelect, onClose, onDragStart, onDragOver, onDragEnd,
+   tab,
+   isActive,
+   onSelect,
+   onClose,
+   onDragStart,
+   onDragOver,
+   onDragEnd,
 }: {
    tab: Tab
    isActive: boolean
@@ -87,16 +81,32 @@ function TabItem({
             "group relative flex items-center gap-2 h-7 px-3 py-0 text-[12px] font-medium cursor-pointer select-none shrink-0 rounded-t-sm mx-[1px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent",
             isActive
                ? "bg-bg-primary text-text-primary border-t border-x border-border/70"
-               : "text-text-muted hover:text-text-secondary hover:bg-bg-primary/40",
+               : "text-text-muted hover:text-text-secondary hover:bg-bg-primary/40"
          )}
       >
          {tab.isExecuting && <IconLoader2 className="h-3 w-3 animate-spin text-accent shrink-0" />}
-         {!tab.isExecuting && tab.isDirty && <span className="h-1.5 w-1.5 rounded-full bg-accent/70 shrink-0" />}
-          {tab.tableName ? (
-             <IconTable className="h-3 w-3 opacity-60 shrink-0" />
-          ) : (
-             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 shrink-0"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          )}
+         {!tab.isExecuting && tab.isDirty && (
+            <span className="h-1.5 w-1.5 rounded-full bg-accent/70 shrink-0" />
+         )}
+         {tab.tableName ? (
+            <IconTable className="h-3 w-3 opacity-60 shrink-0" />
+         ) : (
+            <svg
+               xmlns="http://www.w3.org/2000/svg"
+               width="12"
+               height="12"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               strokeWidth="2"
+               strokeLinecap="round"
+               strokeLinejoin="round"
+               className="opacity-40 shrink-0"
+            >
+               <polyline points="16 18 22 12 16 6" />
+               <polyline points="8 6 2 12 8 18" />
+            </svg>
+         )}
          <span className="truncate max-w-36 text-[11px]">{tab.title}</span>
          <button
             onClick={onClose}

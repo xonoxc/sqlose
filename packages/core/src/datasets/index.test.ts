@@ -10,7 +10,7 @@ describe("Sample Datasets", () => {
          expect(result.isOk()).toBe(true)
          if (result.isOk()) {
             expect(result.value).toHaveLength(4)
-            const categories = result.value.map((d) => d.category)
+            const categories = result.value.map(d => d.category)
             expect(categories).toContain("ecommerce")
             expect(categories).toContain("analytics")
             expect(categories).toContain("social")

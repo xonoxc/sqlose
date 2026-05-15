@@ -7,13 +7,19 @@ import { useEnvironmentStore } from "../stores/environmentStore"
 import { useSettingsStore } from "../stores/settingsStore"
 
 vi.mock("@monaco-editor/react", () => ({
-   default: function MockEditor({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+   default: function MockEditor({
+      value,
+      onChange,
+   }: {
+      value?: string
+      onChange?: (value: string) => void
+   }) {
       return (
          <div data-testid="monaco-editor" data-value={value}>
             <textarea
                data-testid="editor-textarea"
                value={value || ""}
-               onChange={(e) => onChange?.(e.target.value)}
+               onChange={e => onChange?.(e.target.value)}
             />
          </div>
       )

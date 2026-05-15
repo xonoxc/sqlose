@@ -29,31 +29,83 @@ function Wrapper({ children }: { children: ReactNode }) {
 function mockSqlose() {
    const mock = {
       docker: {
-         startEnv: vi.fn().mockResolvedValue({ success: true, data: { environmentId: "env-1", port: 5432, connectionString: "postgresql://..." } }),
+         startEnv: vi
+            .fn()
+            .mockResolvedValue({
+               success: true,
+               data: { environmentId: "env-1", port: 5432, connectionString: "postgresql://..." },
+            }),
          stopEnv: vi.fn().mockResolvedValue({ success: true, data: {} }),
          restartEnv: vi.fn().mockResolvedValue({ success: true, data: {} }),
          health: vi.fn().mockResolvedValue({ success: true, data: { healthy: true, uptime: 120 } }),
          cleanup: vi.fn(),
       },
       env: {
-         create: vi.fn().mockResolvedValue({ success: true, data: { id: "env-1", name: "test", dbType: "postgres", status: "running", port: 5432, uptime: 120, connectionString: "postgresql://localhost:5432/sqlose", containerId: "container-1", createdAt: "2025-01-01T00:00:00Z" } }),
+         create: vi
+            .fn()
+            .mockResolvedValue({
+               success: true,
+               data: {
+                  id: "env-1",
+                  name: "test",
+                  dbType: "postgres",
+                  status: "running",
+                  port: 5432,
+                  uptime: 120,
+                  connectionString: "postgresql://localhost:5432/sqlose",
+                  containerId: "container-1",
+                  createdAt: "2025-01-01T00:00:00Z",
+               },
+            }),
          destroy: vi.fn().mockResolvedValue({ success: true, data: {} }),
          list: vi.fn().mockResolvedValue({ success: true, data: [] }),
-         get: vi.fn().mockResolvedValue({ success: true, data: { id: "env-1", name: "test", dbType: "postgres", status: "running", port: 5432, uptime: 120, connectionString: "postgresql://localhost:5432/sqlose", containerId: "container-1", createdAt: "2025-01-01T00:00:00Z" } }),
+         get: vi
+            .fn()
+            .mockResolvedValue({
+               success: true,
+               data: {
+                  id: "env-1",
+                  name: "test",
+                  dbType: "postgres",
+                  status: "running",
+                  port: 5432,
+                  uptime: 120,
+                  connectionString: "postgresql://localhost:5432/sqlose",
+                  containerId: "container-1",
+                  createdAt: "2025-01-01T00:00:00Z",
+               },
+            }),
          duplicate: vi.fn(),
          reset: vi.fn(),
       },
       query: {
-         execute: vi.fn().mockResolvedValue({ success: true, data: { columns: ["id"], rows: [], rowCount: 0, executionTimeMs: 5 } }),
+         execute: vi
+            .fn()
+            .mockResolvedValue({
+               success: true,
+               data: { columns: ["id"], rows: [], rowCount: 0, executionTimeMs: 5 },
+            }),
       },
       import: {
-         csv: vi.fn().mockResolvedValue({ success: true, data: { tableName: "users", rowCount: 5, columns: ["id", "name"] } }),
+         csv: vi
+            .fn()
+            .mockResolvedValue({
+               success: true,
+               data: { tableName: "users", rowCount: 5, columns: ["id", "name"] },
+            }),
          sql: vi.fn().mockResolvedValue({ success: true, data: { tablesCreated: ["users"] } }),
-         previewCSV: vi.fn().mockResolvedValue({ success: true, data: { columns: ["id"], preview: [{ id: "1" }] } }),
+         previewCSV: vi
+            .fn()
+            .mockResolvedValue({
+               success: true,
+               data: { columns: ["id"], preview: [{ id: "1" }] },
+            }),
       },
       dataset: {
          list: vi.fn().mockResolvedValue({ success: true, data: [] }),
-         import: vi.fn().mockResolvedValue({ success: true, data: { tablesCreated: ["products"] } }),
+         import: vi
+            .fn()
+            .mockResolvedValue({ success: true, data: { tablesCreated: ["products"] } }),
       },
    }
    ;(window as unknown as Record<string, unknown>).sqlose = mock
@@ -141,7 +193,12 @@ describe("useExecuteQuery", () => {
 describe("useImportCSV", () => {
    it("should import CSV", async () => {
       const { result } = renderHook(() => useImportCSV(), { wrapper: Wrapper })
-      result.current.mutate({ environmentId: "env-1", fileName: "data.csv", content: "id,name\n1,a", tableName: "users" })
+      result.current.mutate({
+         environmentId: "env-1",
+         fileName: "data.csv",
+         content: "id,name\n1,a",
+         tableName: "users",
+      })
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
    })
 })
@@ -149,7 +206,12 @@ describe("useImportCSV", () => {
 describe("useImportSQL", () => {
    it("should import SQL", async () => {
       const { result } = renderHook(() => useImportSQL(), { wrapper: Wrapper })
-      result.current.mutate({ environmentId: "env-1", fileName: "dump.sql", content: "CREATE TABLE", tableName: "" })
+      result.current.mutate({
+         environmentId: "env-1",
+         fileName: "dump.sql",
+         content: "CREATE TABLE",
+         tableName: "",
+      })
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
    })
 })

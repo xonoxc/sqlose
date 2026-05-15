@@ -12,8 +12,8 @@ import {
    restartEnvironment as dockerRestartEnvironment,
    healthCheck as dockerHealthCheck,
    destroyContainer as dockerDestroyContainer,
-    stopOrphanedContainers as dockerStopOrphanedContainers,
-    pullImage as dockerPullImage,
+   stopOrphanedContainers as dockerStopOrphanedContainers,
+   pullImage as dockerPullImage,
 } from "@sqlose/core"
 import {
    createEnvironmentRecord,
@@ -67,7 +67,7 @@ function requireString(val: unknown, field: string): string | null {
 
 function validateRequest(
    payload: unknown,
-   fields: Record<string, "string">,
+   fields: Record<string, "string">
 ): IPCSerializedResult<never> | null {
    if (typeof payload !== "object" || payload === null) {
       return invalidPayload("expected an object")
@@ -89,7 +89,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"docker:start-env">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       if (env.dbType === "sqlite") {
          const updated = await updateEnvironment(environmentId, { status: "running" })
@@ -117,7 +120,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"docker:stop-env">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       if (env.dbType === "sqlite") {
          await updateEnvironment(environmentId, { status: "stopped", uptime: null })
@@ -137,7 +143,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"docker:restart-env">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       if (env.dbType === "sqlite") {
          await updateEnvironment(environmentId, { status: "running" })
@@ -157,7 +166,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"docker:health">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       if (env.dbType === "sqlite") {
          return serializeOk({ healthy: true, uptime: 0 })
@@ -174,7 +186,8 @@ export function registerAllHandlers(): void {
    })
 
    ipcMain.handle("docker:pull-image", async (_event, payload: unknown) => {
-      if (typeof payload !== "object" || payload === null) return invalidPayload("expected an object")
+      if (typeof payload !== "object" || payload === null)
+         return invalidPayload("expected an object")
       const { dbType } = payload as Record<string, unknown>
       if (typeof dbType !== "string" || !["postgres", "mysql", "sqlite"].includes(dbType)) {
          return invalidPayload("dbType must be postgres, mysql, or sqlite")
@@ -185,7 +198,8 @@ export function registerAllHandlers(): void {
    })
 
    ipcMain.handle("env:create", async (_event, payload: unknown) => {
-      if (typeof payload !== "object" || payload === null) return invalidPayload("expected an object")
+      if (typeof payload !== "object" || payload === null)
+         return invalidPayload("expected an object")
       const { dbType, name } = payload as Record<string, unknown>
       if (typeof dbType !== "string" || !["postgres", "mysql", "sqlite"].includes(dbType)) {
          return invalidPayload("dbType must be postgres, mysql, or sqlite")
@@ -211,14 +225,18 @@ export function registerAllHandlers(): void {
    })
 
    ipcMain.handle("docker:create-container", async (_event, payload: unknown) => {
-      if (typeof payload !== "object" || payload === null) return invalidPayload("expected an object")
+      if (typeof payload !== "object" || payload === null)
+         return invalidPayload("expected an object")
       const { environmentId } = payload as Record<string, unknown>
       if (typeof environmentId !== "string" || environmentId.length === 0) {
          return invalidPayload("environmentId must be a non-empty string")
       }
 
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       const dockerResult = await dockerCreateEnvironment(env.dbType)
       if (dockerResult.isErr()) {
@@ -248,7 +266,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"env:destroy">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       await dockerDestroyContainer(env.containerId ?? "")
 
@@ -286,7 +307,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"env:duplicate">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       const result = await duplicateEnvironmentRecord(environmentId)
       if (result.isErr()) return serializeErr(result.error)
@@ -300,7 +324,10 @@ export function registerAllHandlers(): void {
          } catch {
             // source file may not exist
          }
-         const updated = await updateEnvironment(dup.id, { connectionString: dstPath, status: "running" })
+         const updated = await updateEnvironment(dup.id, {
+            connectionString: dstPath,
+            status: "running",
+         })
          if (updated.isErr()) return serializeErr(updated.error)
          return serializeOk(updated.value)
       }
@@ -314,7 +341,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"env:reset">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       if (env.dbType === "sqlite") {
          const dbPath = getSqliteDbPath(environmentId)
@@ -323,7 +353,10 @@ export function registerAllHandlers(): void {
          } catch {
             // file may not exist
          }
-         const updated = await updateEnvironment(environmentId, { connectionString: dbPath, status: "running" })
+         const updated = await updateEnvironment(environmentId, {
+            connectionString: dbPath,
+            status: "running",
+         })
          if (updated.isErr()) return serializeErr(updated.error)
          return serializeOk(updated.value)
       }
@@ -338,7 +371,10 @@ export function registerAllHandlers(): void {
 
       const { environmentId } = payload as IPCRequest<"env:nuke">
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       await dockerDestroyContainer(env.containerId ?? "")
 
@@ -369,7 +405,8 @@ export function registerAllHandlers(): void {
    })
 
    ipcMain.handle("import:csv", async (_event, payload: unknown) => {
-      if (typeof payload !== "object" || payload === null) return invalidPayload("expected an object")
+      if (typeof payload !== "object" || payload === null)
+         return invalidPayload("expected an object")
       const p = payload as Record<string, unknown>
       const envErr =
          requireString(p.environmentId, "environmentId") ??
@@ -384,11 +421,10 @@ export function registerAllHandlers(): void {
    })
 
    ipcMain.handle("import:sql", async (_event, payload: unknown) => {
-      if (typeof payload !== "object" || payload === null) return invalidPayload("expected an object")
+      if (typeof payload !== "object" || payload === null)
+         return invalidPayload("expected an object")
       const p = payload as Record<string, unknown>
-      const envErr =
-         requireString(p.fileName, "fileName") ??
-         requireString(p.content, "content")
+      const envErr = requireString(p.fileName, "fileName") ?? requireString(p.content, "content")
       if (envErr) return invalidPayload(envErr)
 
       const { content } = payload as { content: string }
@@ -400,7 +436,8 @@ export function registerAllHandlers(): void {
    })
 
    ipcMain.handle("import:preview-csv", async (_event, payload: unknown) => {
-      if (typeof payload !== "object" || payload === null) return invalidPayload("expected an object")
+      if (typeof payload !== "object" || payload === null)
+         return invalidPayload("expected an object")
       const p = payload as Record<string, unknown>
       const errMsg = requireString(p.content, "content")
       if (errMsg) return invalidPayload(errMsg)
@@ -428,7 +465,10 @@ export function registerAllHandlers(): void {
       if (sqlResult.isErr()) return serializeErr(sqlResult.error)
 
       const env = loadEnvironment(environmentId)
-      if (!env) return serializeErr(new AppError("env:not_found", `Environment ${environmentId} not found`))
+      if (!env)
+         return serializeErr(
+            new AppError("env:not_found", `Environment ${environmentId} not found`)
+         )
 
       const parseResult = await parseSQLDump(sqlResult.value)
       if (parseResult.isErr()) return serializeErr(parseResult.error)

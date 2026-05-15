@@ -1,14 +1,10 @@
-import { useState } from "react"
 import { IconDatabase, IconPlus, IconTrash, IconServer } from "@tabler/icons-react"
-import { useEnvironmentStore } from "../stores/environmentStore"
+import { useDashboardState } from "../hooks/useDashboardState"
 import { CreateDatabaseFlow } from "./CreateDatabaseFlow"
 
 export function Dashboard() {
-   const environments = useEnvironmentStore(s => s.environments)
-   const selectEnvironment = useEnvironmentStore(s => s.selectEnvironment)
-   const destroyEnvironment = useEnvironmentStore(s => s.destroyEnvironment)
-
-   const [showCreateFlow, setShowCreateFlow] = useState(false)
+   const { showCreateFlow, setShowCreateFlow, environments, handleSelectEnv, handleDestroyEnv } =
+      useDashboardState()
 
    return (
       <div className="flex h-full w-full flex-col bg-[#0c0c0c] text-text-primary overflow-hidden rounded-xl border border-white/10 shadow-2xl relative">
@@ -25,7 +21,6 @@ export function Dashboard() {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Create New Card */}
                   <button
                      onClick={() => setShowCreateFlow(true)}
                      className="flex flex-col items-center justify-center bg-[#111] border border-dashed border-[#333] hover:border-accent hover:bg-[#161616] rounded-xl p-5 min-h-[160px] cursor-pointer transition-all duration-200 group gap-3"
@@ -38,12 +33,11 @@ export function Dashboard() {
                      </span>
                   </button>
 
-                  {/* Existing Environments */}
                   {environments.map(env => (
                      <div
                         key={env.id}
                         className="flex flex-col bg-[#111] border border-[#222] hover:border-[#444] rounded-xl p-5 shadow-sm transition-all duration-200 cursor-pointer group"
-                        onClick={() => selectEnvironment(env.id)}
+                        onClick={() => handleSelectEnv(env.id)}
                      >
                         <div className="flex items-start justify-between mb-4">
                            <div className="flex items-center gap-3">
@@ -64,10 +58,7 @@ export function Dashboard() {
                               </div>
                            </div>
                            <button
-                              onClick={e => {
-                                 e.stopPropagation()
-                                 destroyEnvironment(env.id)
-                              }}
+                              onClick={e => handleDestroyEnv(e, env.id)}
                               className="h-7 w-7 rounded flex items-center justify-center text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100"
                               title="Nuke Database"
                            >

@@ -1,8 +1,17 @@
-import { useCallback } from "react"
-import { Modal, ModalPortal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, ModalTitle, ModalDescription, Button, Separator } from "@sqlose/ui"
+import {
+   Modal,
+   ModalPortal,
+   ModalOverlay,
+   ModalContent,
+   ModalHeader,
+   ModalFooter,
+   ModalTitle,
+   ModalDescription,
+   Button,
+   Separator,
+} from "@sqlose/ui"
 import { IconRotate, IconToggleLeft, IconToggleRight } from "@tabler/icons-react"
-import { useSettingsStore } from "../stores/settingsStore"
-import { useEditorStore } from "../stores/editorStore"
+import { useSettingsPanelState } from "../hooks/useSettingsPanelState"
 
 interface SettingsPanelProps {
    isOpen: boolean
@@ -10,16 +19,8 @@ interface SettingsPanelProps {
 }
 
 export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
-   const vimModeEnabled = useSettingsStore((s) => s.vimModeEnabled)
-   const toggleVimMode = useSettingsStore((s) => s.toggleVimMode)
-   const keybindings = useSettingsStore((s) => s.keybindings)
-   const resetKeybindings = useSettingsStore((s) => s.resetKeybindings)
-   const setVimEnabled = useEditorStore((s) => s.setVimEnabled)
-
-   const handleToggleVim = useCallback(() => {
-      toggleVimMode()
-      setVimEnabled(!vimModeEnabled)
-   }, [toggleVimMode, setVimEnabled, vimModeEnabled])
+   const { vimModeEnabled, handleToggleVim, keybindings, handleResetKeybindings } =
+      useSettingsPanelState()
 
    const actionLabels: Record<string, string> = {
       "query.execute": "Execute Query",
@@ -30,7 +31,13 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       "tab.prev": "Previous Tab",
    }
 
-   const formatKeybinding = (kb: { key: string; ctrl: boolean; shift: boolean; alt: boolean; meta: boolean }) => {
+   const formatKeybinding = (kb: {
+      key: string
+      ctrl: boolean
+      shift: boolean
+      alt: boolean
+      meta: boolean
+   }) => {
       const parts: string[] = []
       if (kb.ctrl) parts.push("Ctrl")
       if (kb.alt) parts.push("Alt")
@@ -57,7 +64,9 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                         <div className="flex items-center justify-between">
                            <div>
                               <p className="text-sm text-text-primary">Vim Mode</p>
-                              <p className="text-xs text-text-muted mt-0.5">Enable Vim keybindings in the SQL editor</p>
+                              <p className="text-xs text-text-muted mt-0.5">
+                                 Enable Vim keybindings in the SQL editor
+                              </p>
                            </div>
                            <button
                               onClick={handleToggleVim}
@@ -78,7 +87,12 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                      <section>
                         <div className="flex items-center justify-between mb-3">
                            <h3 className="text-sm font-medium text-text-primary">Keybindings</h3>
-                           <Button variant="ghost" size="sm" onClick={resetKeybindings} className="h-6 text-xs gap-1">
+                           <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleResetKeybindings}
+                              className="h-6 text-xs gap-1"
+                           >
                               <IconRotate className="h-3 w-3" />
                               Reset
                            </Button>

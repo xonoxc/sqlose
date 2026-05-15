@@ -91,7 +91,7 @@ describe("CSV Import", () => {
          const schema = inferSchema(
             ["date"],
             [{ date: "2024-01-01" }, { date: "2024-06-15" }],
-            "test",
+            "test"
          )
          expect(schema.columns[0].type).toBe("TIMESTAMP")
       })
@@ -120,10 +120,14 @@ describe("CSV Import", () => {
 
    describe("generateInsertSQL", () => {
       it("should generate INSERT statements", () => {
-         const sqls = generateInsertSQL("users", ["id", "name"], [
-            { id: "1", name: "Alice" },
-            { id: "2", name: "Bob" },
-         ])
+         const sqls = generateInsertSQL(
+            "users",
+            ["id", "name"],
+            [
+               { id: "1", name: "Alice" },
+               { id: "2", name: "Bob" },
+            ]
+         )
          expect(sqls).toHaveLength(2)
          expect(sqls[0]).toContain("INSERT INTO")
          expect(sqls[0]).toContain("Alice")

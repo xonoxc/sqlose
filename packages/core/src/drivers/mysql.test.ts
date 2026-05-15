@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest"
 import { executeMySQLQuery, testMySQLConnection } from "./mysql"
 
 const mockConnection = { query: vi.fn(), end: vi.fn() }
-let createConnectionImpl: () => Promise<typeof mockConnection> = () => Promise.resolve(mockConnection)
+let createConnectionImpl: () => Promise<typeof mockConnection> = () =>
+   Promise.resolve(mockConnection)
 
 vi.mock("mysql2/promise", () => ({
    default: {

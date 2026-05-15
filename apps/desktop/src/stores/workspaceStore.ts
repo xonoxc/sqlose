@@ -37,20 +37,20 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             })
          },
 
-          openTab: (environmentId?: string, overrides?: Partial<Tab>) => {
-             const tableName = overrides?.tableName
-             const newTab = createTab(environmentId ?? null, tableName)
-             const merged = { ...newTab, ...overrides }
-             set((state) => ({
-                tabs: [...state.tabs, merged],
-                activeTabId: merged.id,
-             }))
-             return ok(merged)
-          },
+         openTab: (environmentId?: string, overrides?: Partial<Tab>) => {
+            const tableName = overrides?.tableName
+            const newTab = createTab(environmentId ?? null, tableName)
+            const merged = { ...newTab, ...overrides }
+            set(state => ({
+               tabs: [...state.tabs, merged],
+               activeTabId: merged.id,
+            }))
+            return ok(merged)
+         },
 
          closeTab: (tabId: string) => {
             const state = get()
-            const tabIndex = state.tabs.findIndex((t) => t.id === tabId)
+            const tabIndex = state.tabs.findIndex(t => t.id === tabId)
 
             if (tabIndex === -1) {
                return err(new AppError("env:not_found", `Tab ${tabId} not found`))
@@ -65,7 +65,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                return ok({ closedId: tabId, newActiveId: newTab.id })
             }
 
-            const newTabs = state.tabs.filter((t) => t.id !== tabId)
+            const newTabs = state.tabs.filter(t => t.id !== tabId)
             let newActiveId = state.activeTabId
 
             if (state.activeTabId === tabId) {
@@ -83,7 +83,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
          setActiveTab: (tabId: string) => {
             const state = get()
-            const exists = state.tabs.some((t) => t.id === tabId)
+            const exists = state.tabs.some(t => t.id === tabId)
 
             if (!exists) {
                return err(new AppError("env:not_found", `Tab ${tabId} not found`))
@@ -95,7 +95,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
          updateTab: (tabId: string, updates: Partial<Tab>) => {
             const state = get()
-            const tabIndex = state.tabs.findIndex((t) => t.id === tabId)
+            const tabIndex = state.tabs.findIndex(t => t.id === tabId)
 
             if (tabIndex === -1) {
                return err(new AppError("env:not_found", `Tab ${tabId} not found`))
@@ -122,8 +122,18 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
          moveTab: (fromIndex: number, toIndex: number) => {
             const state = get()
 
-            if (fromIndex < 0 || fromIndex >= state.tabs.length || toIndex < 0 || toIndex >= state.tabs.length) {
-               return err(new AppError("ipc:invalid_payload", `Invalid tab indices: ${fromIndex} -> ${toIndex}`))
+            if (
+               fromIndex < 0 ||
+               fromIndex >= state.tabs.length ||
+               toIndex < 0 ||
+               toIndex >= state.tabs.length
+            ) {
+               return err(
+                  new AppError(
+                     "ipc:invalid_payload",
+                     `Invalid tab indices: ${fromIndex} -> ${toIndex}`
+                  )
+               )
             }
 
             if (fromIndex === toIndex) {
@@ -147,13 +157,13 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
          getActiveTab: () => {
             const state = get()
-            return state.tabs.find((t) => t.id === state.activeTabId)
+            return state.tabs.find(t => t.id === state.activeTabId)
          },
       }),
       {
          name: "sqlose-workspace",
-         partialize: (state) => ({
-            tabs: state.tabs.map((tab) => ({
+         partialize: state => ({
+            tabs: state.tabs.map(tab => ({
                ...tab,
                result: null,
                error: null,
@@ -162,6 +172,6 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             activeTabId: state.activeTabId,
             paneSizes: state.paneSizes,
          }),
-      },
-   ),
+      }
+   )
 )

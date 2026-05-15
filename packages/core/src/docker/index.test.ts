@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest"
 import { DockerError } from "@sqlose/shared"
-import { createEnvironment, healthCheck, cleanupOrphans, destroyContainer, startEnvironment, stopEnvironment, restartEnvironment, __setDocker } from "./index"
+import {
+   createEnvironment,
+   healthCheck,
+   cleanupOrphans,
+   destroyContainer,
+   startEnvironment,
+   stopEnvironment,
+   restartEnvironment,
+   __setDocker,
+} from "./index"
 import * as portModule from "./port"
 
 vi.mock("./port", () => ({
@@ -17,12 +26,14 @@ vi.mock("../drivers/mysql", () => ({
    testMySQLConnection: vi.fn(),
 }))
 
-function makeMockDocker(overrides: Partial<{
-   createContainer: ReturnType<typeof vi.fn>
-   getContainer: ReturnType<typeof vi.fn>
-   listContainers: ReturnType<typeof vi.fn>
-   pull: ReturnType<typeof vi.fn>
-}> = {}) {
+function makeMockDocker(
+   overrides: Partial<{
+      createContainer: ReturnType<typeof vi.fn>
+      getContainer: ReturnType<typeof vi.fn>
+      listContainers: ReturnType<typeof vi.fn>
+      pull: ReturnType<typeof vi.fn>
+   }> = {}
+) {
    const mockContainer = {
       id: "mock-container-id",
       start: vi.fn().mockResolvedValue(undefined),
@@ -34,36 +45,50 @@ function makeMockDocker(overrides: Partial<{
       }),
    }
 
-   const followProgress = vi.fn().mockImplementation((_stream, onFinished: (err: Error | null) => void) => {
-      onFinished(null)
-   })
+   const followProgress = vi
+      .fn()
+      .mockImplementation((_stream, onFinished: (err: Error | null) => void) => {
+         onFinished(null)
+      })
 
    return {
       createContainer: overrides.createContainer ?? vi.fn().mockResolvedValue(mockContainer),
       getContainer: overrides.getContainer ?? vi.fn().mockReturnValue(mockContainer),
       listContainers: overrides.listContainers ?? vi.fn().mockResolvedValue([]),
-      pull: overrides.pull ?? vi.fn().mockImplementation((_image: string, _opts: unknown, callback: (err: Error | null, stream: unknown) => void) => {
-         callback(null, "mock-stream")
-      }),
+      pull:
+         overrides.pull ??
+         vi
+            .fn()
+            .mockImplementation(
+               (
+                  _image: string,
+                  _opts: unknown,
+                  callback: (err: Error | null, stream: unknown) => void
+               ) => {
+                  callback(null, "mock-stream")
+               }
+            ),
       modem: { followProgress },
    }
 }
 
-const mockOkBool = (value: boolean) => Promise.resolve({
-   isOk: () => true,
-   isErr: () => false,
-   value,
-   error: undefined,
-   _unsafeUnwrap: () => value,
-})
+const mockOkBool = (value: boolean) =>
+   Promise.resolve({
+      isOk: () => true,
+      isErr: () => false,
+      value,
+      error: undefined,
+      _unsafeUnwrap: () => value,
+   })
 
-const mockErrBool = (code: string) => Promise.resolve({
-   isOk: () => false,
-   isErr: () => true,
-   error: { code, message: code },
-   value: undefined,
-   _unsafeUnwrapErr: () => ({ code, message: code }),
-})
+const mockErrBool = (code: string) =>
+   Promise.resolve({
+      isOk: () => false,
+      isErr: () => true,
+      error: { code, message: code },
+      value: undefined,
+      _unsafeUnwrapErr: () => ({ code, message: code }),
+   })
 
 describe("Docker Orchestration", () => {
    beforeEach(async () => {
@@ -172,9 +197,11 @@ describe("Docker Orchestration", () => {
          })
          ;(portModule.reservePort as Mock).mockReturnValue(true)
 
-         __setDocker(makeMockDocker({
-            createContainer: vi.fn().mockRejectedValue(new Error("Docker daemon not running")),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               createContainer: vi.fn().mockRejectedValue(new Error("Docker daemon not running")),
+            }) as never
+         )
 
          const result = await createEnvironment("postgres")
 
@@ -207,16 +234,18 @@ describe("Docker Orchestration", () => {
       })
 
       it("should return unhealthy for missing container", async () => {
-         __setDocker(makeMockDocker({
-            getContainer: vi.fn().mockReturnValue({
-               id: "mock",
-               start: vi.fn(),
-               stop: vi.fn(),
-               restart: vi.fn(),
-               remove: vi.fn(),
-               inspect: vi.fn().mockRejectedValue({ statusCode: 404 }),
-            }),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               getContainer: vi.fn().mockReturnValue({
+                  id: "mock",
+                  start: vi.fn(),
+                  stop: vi.fn(),
+                  restart: vi.fn(),
+                  remove: vi.fn(),
+                  inspect: vi.fn().mockRejectedValue({ statusCode: 404 }),
+               }),
+            }) as never
+         )
 
          const result = await healthCheck("nonexistent")
 
@@ -227,16 +256,18 @@ describe("Docker Orchestration", () => {
       })
 
       it("should return DockerError on inspect failure", async () => {
-         __setDocker(makeMockDocker({
-            getContainer: vi.fn().mockReturnValue({
-               id: "mock",
-               start: vi.fn(),
-               stop: vi.fn(),
-               restart: vi.fn(),
-               remove: vi.fn(),
-               inspect: vi.fn().mockRejectedValue(new Error("Connection refused")),
-            }),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               getContainer: vi.fn().mockReturnValue({
+                  id: "mock",
+                  start: vi.fn(),
+                  stop: vi.fn(),
+                  restart: vi.fn(),
+                  remove: vi.fn(),
+                  inspect: vi.fn().mockRejectedValue(new Error("Connection refused")),
+               }),
+            }) as never
+         )
 
          const result = await healthCheck("bad-container")
 
@@ -255,16 +286,18 @@ describe("Docker Orchestration", () => {
       })
 
       it("startEnvironment should return error on failure", async () => {
-         __setDocker(makeMockDocker({
-            getContainer: vi.fn().mockReturnValue({
-               id: "mock",
-               start: vi.fn().mockRejectedValue(new Error("Start failed")),
-               stop: vi.fn(),
-               restart: vi.fn(),
-               remove: vi.fn(),
-               inspect: vi.fn(),
-            }),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               getContainer: vi.fn().mockReturnValue({
+                  id: "mock",
+                  start: vi.fn().mockRejectedValue(new Error("Start failed")),
+                  stop: vi.fn(),
+                  restart: vi.fn(),
+                  remove: vi.fn(),
+                  inspect: vi.fn(),
+               }),
+            }) as never
+         )
 
          const result = await startEnvironment("bad-container")
          expect(result.isErr()).toBe(true)
@@ -279,16 +312,18 @@ describe("Docker Orchestration", () => {
       })
 
       it("stopEnvironment should return error on failure", async () => {
-         __setDocker(makeMockDocker({
-            getContainer: vi.fn().mockReturnValue({
-               id: "mock",
-               start: vi.fn(),
-               stop: vi.fn().mockRejectedValue(new Error("Stop failed")),
-               restart: vi.fn(),
-               remove: vi.fn(),
-               inspect: vi.fn(),
-            }),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               getContainer: vi.fn().mockReturnValue({
+                  id: "mock",
+                  start: vi.fn(),
+                  stop: vi.fn().mockRejectedValue(new Error("Stop failed")),
+                  restart: vi.fn(),
+                  remove: vi.fn(),
+                  inspect: vi.fn(),
+               }),
+            }) as never
+         )
 
          const result = await stopEnvironment("bad-container")
          expect(result.isErr()).toBe(true)
@@ -303,16 +338,18 @@ describe("Docker Orchestration", () => {
       })
 
       it("restartEnvironment should return error on failure", async () => {
-         __setDocker(makeMockDocker({
-            getContainer: vi.fn().mockReturnValue({
-               id: "mock",
-               start: vi.fn(),
-               stop: vi.fn(),
-               restart: vi.fn().mockRejectedValue(new Error("Restart failed")),
-               remove: vi.fn(),
-               inspect: vi.fn(),
-            }),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               getContainer: vi.fn().mockReturnValue({
+                  id: "mock",
+                  start: vi.fn(),
+                  stop: vi.fn(),
+                  restart: vi.fn().mockRejectedValue(new Error("Restart failed")),
+                  remove: vi.fn(),
+                  inspect: vi.fn(),
+               }),
+            }) as never
+         )
 
          const result = await restartEnvironment("bad-container")
          expect(result.isErr()).toBe(true)
@@ -334,16 +371,18 @@ describe("Docker Orchestration", () => {
       })
 
       it("should return error on failure", async () => {
-         __setDocker(makeMockDocker({
-            getContainer: vi.fn().mockReturnValue({
-               id: "mock",
-               start: vi.fn(),
-               stop: vi.fn().mockRejectedValue(new Error("Stop failed")),
-               restart: vi.fn(),
-               remove: vi.fn().mockRejectedValue(new Error("Remove failed")),
-               inspect: vi.fn(),
-            }),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               getContainer: vi.fn().mockReturnValue({
+                  id: "mock",
+                  start: vi.fn(),
+                  stop: vi.fn().mockRejectedValue(new Error("Stop failed")),
+                  restart: vi.fn(),
+                  remove: vi.fn().mockRejectedValue(new Error("Remove failed")),
+                  inspect: vi.fn(),
+               }),
+            }) as never
+         )
 
          const result = await destroyContainer("bad-container")
          expect(result.isErr()).toBe(true)
@@ -355,13 +394,15 @@ describe("Docker Orchestration", () => {
 
    describe("cleanupOrphans", () => {
       it("should clean up orphaned containers", async () => {
-         __setDocker(makeMockDocker({
-            listContainers: vi.fn().mockResolvedValue([
-               { Id: "abc", Names: ["/sqlose-postgres"], State: "exited" },
-               { Id: "def", Names: ["/other-container"], State: "exited" },
-               { Id: "ghi", Names: ["/sqlose-mysql"], State: "running" },
-            ]),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               listContainers: vi.fn().mockResolvedValue([
+                  { Id: "abc", Names: ["/sqlose-postgres"], State: "exited" },
+                  { Id: "def", Names: ["/other-container"], State: "exited" },
+                  { Id: "ghi", Names: ["/sqlose-mysql"], State: "running" },
+               ]),
+            }) as never
+         )
 
          const result = await cleanupOrphans()
 
@@ -372,9 +413,11 @@ describe("Docker Orchestration", () => {
       })
 
       it("should return DockerError on failure", async () => {
-         __setDocker(makeMockDocker({
-            listContainers: vi.fn().mockRejectedValue(new Error("Docker not available")),
-         }) as never)
+         __setDocker(
+            makeMockDocker({
+               listContainers: vi.fn().mockRejectedValue(new Error("Docker not available")),
+            }) as never
+         )
 
          const result = await cleanupOrphans()
          expect(result.isErr()).toBe(true)

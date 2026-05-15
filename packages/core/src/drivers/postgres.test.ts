@@ -34,7 +34,10 @@ describe("executePostgresQuery", () => {
    })
 
    it("should execute query and return results", async () => {
-      const result = await executePostgresQuery("postgresql://localhost:5432/test", "SELECT * FROM users")
+      const result = await executePostgresQuery(
+         "postgresql://localhost:5432/test",
+         "SELECT * FROM users"
+      )
       expect(result.isOk()).toBe(true)
       if (result.isOk()) {
          expect(result.value.columns).toEqual(["id", "name"])
@@ -44,7 +47,10 @@ describe("executePostgresQuery", () => {
 
    it("should return syntax error for invalid SQL", async () => {
       mockClient.query.mockRejectedValue(new Error("syntax error at or near"))
-      const result = await executePostgresQuery("postgresql://localhost:5432/test", "SELECT INVALID")
+      const result = await executePostgresQuery(
+         "postgresql://localhost:5432/test",
+         "SELECT INVALID"
+      )
       expect(result.isErr()).toBe(true)
       if (result.isErr()) {
          expect(result.error.code).toBe("query:invalid_syntax")
