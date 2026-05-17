@@ -10,6 +10,7 @@ import {
    IconFileCode,
 } from "@tabler/icons-react"
 import type { QueryResult } from "@sqlose/shared"
+import { isMac } from "../lib/types"
 import { useResultsPanelState } from "../hooks/useResultsPanelState"
 
 interface ResultsPanelProps {
@@ -143,18 +144,18 @@ function ResultsTab({
                <span className="text-[13px] font-medium tracking-wide">Ready to run query</span>
                <div className="flex flex-col gap-1.5 mt-3">
                   <div className="flex items-center gap-2 text-[10px] font-mono bg-bg-secondary px-2.5 py-1 rounded border border-border/50">
-                     <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
-                        ⌘
-                     </kbd>
-                     <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
-                        ↵
-                     </kbd>
-                     <span className="text-text-muted">Run query</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] font-mono bg-bg-secondary px-2.5 py-1 rounded border border-border/50">
-                     <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
-                        ⌘
-                     </kbd>
+                      <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
+                         {isMac() ? "⌘" : "Ctrl"}
+                      </kbd>
+                      <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
+                         ↵
+                      </kbd>
+                      <span className="text-text-muted">Run query</span>
+                   </div>
+                   <div className="flex items-center gap-2 text-[10px] font-mono bg-bg-secondary px-2.5 py-1 rounded border border-border/50">
+                      <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
+                         {isMac() ? "⌘" : "Ctrl"}
+                      </kbd>
                      <kbd className="bg-bg-primary px-1 py-0.5 rounded border border-border/40 text-[9px]">
                         K
                      </kbd>
